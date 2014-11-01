@@ -1,4 +1,9 @@
 <?php
+	/*
+	 * Functions called by client to request a service or resource from the server
+	 * REMEMBER TO ALWAYS SANITIZE INPUTS!!!
+	 */
+
 
 	// createUser function adds user information to database for future log ins
 
@@ -85,6 +90,42 @@
 		// Might want to only show first 10/20/30 songs?
 		
 		return $library;
+	}
+	
+	// Functions that still need to be implemented
+	
+	function shareSong($sender, $receiver) {
+		// Add filename of shared song to receiver's shared file
+	}
+	
+	function uploadSong($username, $songName) {
+		// Receive song through upload and save to appropriate location
+		// Store tags and filename in database with uploader
+	}
+	
+	function deleteSong($username, $songName) {
+		// Remove entry from database
+		// Check if file is used by other users
+		// Delete if not
+		// Remove file from all users who have had it shared to them
+	}
+	
+	function addToPlaylist($username, $songName, $playlistName) {
+		// playlists have not been designed yet
+	}
+	
+	function removeFromPlaylist($username, $songName, $playlistName) {
+		// playlists have not been designed yet
+	}
+	
+	// Search functions
+	
+	function basicSearch($username, $query) {
+		// Query database with user query across all fields (e.g. title, artist, album)
+	}
+	
+	function advancedSearch($username, $title, $artist, $album) {
+		// If field is NULL, don't use it, otherwise query database with correct terms
 	}
 	
 ?>
