@@ -1,4 +1,6 @@
 <?php
+	include "tagReader.php";
+
 	/*
 	 * Functions called by client to request a service or resource from the server
 	 * REMEMBER TO ALWAYS SANITIZE INPUTS!!!
@@ -132,15 +134,88 @@
 	
 	*/
 	
-	// Functions that still need to be implemented
-	
 	function shareSong($sender, $receiver, $songName) {
 		// Add filename of shared song to receiver's shared file
 	}
 	
-	function uploadSong($username, $songName) {
-		// Receive song through upload and save to appropriate location
-		// Store tags and filename in database with uploader
+	function uploadSong($username) {
+		// Check file extension
+	
+		$checkName = basename($_FILES["uploadedFile"]["name"]);
+		$info = pathinfo($checkName);
+		$fileExtension = $info["extension"];
+		
+		if($fileExtension != "mp3") {		// Only accept mp3s for now
+			print("<b>Files must be in mp3 format</b><br>");
+			return false;
+		}
+	
+		// Create file name based off id
+	
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		$stmt = $connect->prepare("SELECT MAX(id) FROM music");
+		$stmt->execute();
+		
+		$results = $stmt->get_result();
+		$row = $results->fetch_array();
+		
+		if($row == NULL) {	// First file in db
+			$newId = 0;
+		}
+		else {
+			$prevId = $row["id"];	// Current highest id
+			$newId = $prevId + 1;
+		}
+		
+		$fileName = "./MusicFiles/" . $newId . ".mp3";
+	
+		else if(file_exists($fileName)){
+			print("<b>A file with that id already exists</b>");
+			return false;
+		}
+		else if($_FILES["uploadedFile"]["size"] >= 500000) {	// File too big
+			print("<b>File must be smaller than 500MB</b>");
+			return false;
+		}
+		else {		
+			if(move_uploaded_file($_FILE["uploadedFile"]["tmp_name"], $fileName)) {
+				print("Success");
+				//addSongToDB($username, $fileName);
+				return true;
+			}
+			else {
+				print("<b>File failed to upload</b>");
+				return false;
+			}
+		}
+	}
+	
+	function addSongToDB($username, $fileName) {
+		if(file_exists($fileName)) {
+			$reader = new ID3TagsReader();
+			$tags = $reader->getTagsInfo($fileName);
+			
+			$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+			
+			// Check if user exists
+			
+			$stmt = $connect->prepare("SELECT FROM users WHERE username = ?");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+			
+			$results = $stmt->get_result();
+			$row = $results->fetch_array();
+			
+			if($row == NULL) {
+				print("User does not exist in database");
+			}
+			else {		// Insert tags into database
+				$stmt = $connect->prepare("INSERT INTO music (file_name, title, artist, album, owner), VALUES (?, ?, ?, ?, ?)");
+				$stmt->bind_param("sssss", $fileName, $tags["Title"], $tags["Author"], $tags["Album"], $username);
+				$stmt->execute();
+			}
+		}
 	}
 	
 	function deleteSong($username, $songName) {
