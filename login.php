@@ -31,6 +31,9 @@ music.Apolymoxic.com is under construction. Please check back later.
 			//If something was posted, check to see if the section was the login
 				if (isset($_POST["login"])) {
 					//Login... 
+					
+					// Need to check if fields are empty
+					
 					if(logIn($_REQUEST["username"], $_REQUEST["password"])) {
 						print("Logged in");
 					}
@@ -54,7 +57,15 @@ music.Apolymoxic.com is under construction. Please check back later.
 			//If something was posted, check to see if the section was the "create an account"
 				if (isset($_POST["create"])) {
 					//Call function to create an account. 
-					createUser($_REQUEST["reqUsername"], $_REQUEST["reqPassword"]);
+					
+					// Need to check if fields are empty
+					
+					if($_REQUEST["reqPassword"] == $_REQUEST["verPassword"]) {
+						createUser($_REQUEST["reqUsername"], $_REQUEST["reqPassword"]);
+					}
+					else {
+						print("<b>Password and Confirm Password did not match</b>");
+					}
 				}	
 			}
 			?>

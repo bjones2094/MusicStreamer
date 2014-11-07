@@ -11,6 +11,10 @@
 	// createUser function adds user information to database for future log ins
 
 	function createUser($username, $password) {
+		if($username == "" or $password == "") {
+			return false;
+		}
+	
 		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 		
 		if(mysqli_connect_error()) {
@@ -42,6 +46,10 @@
 	// logIn function logs a specific user in for a session
 	
 	function logIn($username, $password) {
+		if($username == "" or $password == "") {
+			return false;
+		}
+	
 		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 		
 		if(mysqli_connect_error()) {
