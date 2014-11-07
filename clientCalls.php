@@ -4,47 +4,68 @@
 	 * REMEMBER TO ALWAYS SANITIZE INPUTS!!!
 	 */
 
+	// Use this line to connect to database:
+	// $connect new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+
 
 	// createUser function adds user information to database for future log ins
 
 	function createUser($username, $password) {
-		$connect = mysqli_connect("server", "username", "password", "users");
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return false;
+		}
 		
 		$password = crypt($password);				// Hash password before storing
-		$username = mysqli_real_escape_string($connect, $username);		// Escape all possible SQL syntax
+		$password = substr($password, 0, 10);			// Only use first 10 characters to keep hash short
 		
 		// Check if username is already taken
 		
-		$result = mysqli_query($connect, "SELECT * FROM users WHERE username='$username'");
-		$row = mysqli_fetch_array($result);
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		$row = $result->fetch_array();
 		
 		if($row == NULL) {
-			mysqli_query($connect, "INSERT INTO users (username, password) VALUES ('$username', '$password')");
+			$stmt = $connect->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+			$stmt->bind_param("ss", $username, $password);
+			$stmt->execute();
 		}
 		else {
-			// User already exists
+			print("User already exists.");
 		}
 	}
 	
 	// logIn function logs a specific user in for a session
 	
 	function logIn($username, $password) {
-		$connect = mysqli_connect("server", "username", "password", "users");
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return false;
+		}
 		
 		$password = crypt($password);
-		$username = mysqli_real_escape_string($connect, $username);
+		$password = substr($password, 0, 10);
 		
-		$result = mysqli_query($connect, "SELECT * FROM users WHERE username='$username'");
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username=?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
 		
 		if(!$result) {		// Check if the user exists
 			return false;
 		}
 		
-		$row = mysqli_fetch_array($result);
+		$row = $result->fetch_array();
 		
-		if(mysqli_fetch_array($result) == NULL) {	// Only one result
+		if($result->fetch_array() == NULL) {	// Only one result
 			$compare = $row["password"];
-			return ($password == $compare);
+			return ($row["password"] == $compare);
 		}
 		else {
 			return false;
@@ -53,14 +74,19 @@
 
 	// getLibrary function is used to get the users music library to display to the user
 
+	/*
+
 	function getLibrary($username) {
-		$connect = mysqli_connect("server", "username", "password", "music");
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 		
-		$username = mysqli_real_escape_string($connect, $username);
+		$stmt = $connect->prepare("SELECT * FROM music WHERE uploader=?");	// Get all music uploaded by user from database
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
 		
-		$result = mysqli_query($connect, "SELECT * FROM music WHERE uploader='$username'");	// Get all music uploaded by user from database
+		$result = $stmt->get_result();
 		
-		while($row = mysqli_fetch_array($result))
+		
+		while($row = $result->fetch_array())
 		{
 			$rows []= $row;
 		}
@@ -68,7 +94,7 @@
 		$library = [];		// Holds each song as a string consisting of it's tags, seperated by colons (e.g. "title:artist:album:upload");
 		
 		foreach($rows as $row) {
-			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "upload";
+			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "u";
 			$library []= $songInfo;
 		}
 		
@@ -80,10 +106,14 @@
 		// Get info for each file from database
 		
 		foreach($sharedList as $fileName) {
-			$result = mysqli_query($connect, "SELECT * FROM music WHERE filename='$filename'");
-			$row = mysqli_fetch_array($result);
+			$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
+			$stmt->bind_param("s", $filename);
+			$stmt->execute();
 			
-			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "share";
+			$result = $stmt->get_result();
+			$row = $result->fetch_array();
+			
+			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "s";
 			$library []= $songInfo;
 		}
 		
@@ -92,9 +122,11 @@
 		return $library;
 	}
 	
+	*/
+	
 	// Functions that still need to be implemented
 	
-	function shareSong($sender, $receiver) {
+	function shareSong($sender, $receiver, $songName) {
 		// Add filename of shared song to receiver's shared file
 	}
 	
