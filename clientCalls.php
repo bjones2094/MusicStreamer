@@ -87,27 +87,39 @@
 
 	// getLibrary function is used to get the users music library to display to the user
 
-	/*
-
 	function getLibrary($username) {
 		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 		
-		$stmt = $connect->prepare("SELECT * FROM music WHERE uploader=?");	// Get all music uploaded by user from database
+		// Get user id from username
+		
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username=?");
 		$stmt->bind_param("s", $username);
 		$stmt->execute();
 		
 		$result = $stmt->get_result();
 		
+		if($result == NULL) {		// User doesn't exist
+			return NULL;
+		}
+		else {
+			$row = $result->fetch_array();
+			$userId = $row["id"];
+		}
+		
+		// Get all music uploaded by user from database
+		
+		$stmt = $connect->prepare("SELECT * FROM music WHERE owner=?");
+		$stmt->bind_param("s", $userId);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		
+		$library = array();		// Holds each song as an associative array;
 		
 		while($row = $result->fetch_array())
 		{
-			$rows []= $row;
-		}
-		
-		$library = [];		// Holds each song as a string consisting of it's tags, seperated by colons (e.g. "title:artist:album:upload");
-		
-		foreach($rows as $row) {
-			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "u";
+			$songInfo = $row;
+			$songInfo["permission"] = "u";
 			$library []= $songInfo;
 		}
 		
@@ -121,21 +133,21 @@
 			// Get info for each file from database
 		
 			foreach($sharedList as $fileName) {
-				$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
-				$stmt->bind_param("s", $fileName);
-				$stmt->execute();
-			
-				$result = $stmt->get_result();
-				$row = $result->fetch_array();
-			
-				// If file not in database, remove from shared file
-			
-				if($row == NULL) {
+				if(!file_exists($fileName)) {
 					$sharedString = str_replace($fileName . "\n", "", $sharedString);	// Remove non-existent file name
 				}
+				else {
+					$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
+					$stmt->bind_param("s", $fileName);
+					$stmt->execute();
 			
-				$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "s";
-				$library []= $songInfo;
+					$result = $stmt->get_result();
+					$row = $result->fetch_array();
+			
+					$songInfo = $row;
+					$songInfo["permission"] = "s";
+					$library []= $songInfo;
+				}
 			}
 		
 			file_put_contents($fileName, $sharedString);		// Update file after any changes are made
@@ -146,9 +158,11 @@
 		return $library;
 	}
 	
-	*/
-	
 	function shareSong($sender, $receiver, $songName) {
+		// Check that sender and receiver aren't same person (someone would actually try this)
+		// Check if user exists
+		// Check if user's shared file exists
+		// Create file if necessary
 		// Add filename of shared song to receiver's shared file
 	}
 	
@@ -203,8 +217,7 @@
 		}
 		else {		
 			if(move_uploaded_file($_FILES["uploadedFile"]["tmp_name"], $fileName)) {
-				addSongToDB($username, $fileName);
-				return true;
+				return $fileName;
 			}
 			else {
 				print("<b>File failed to upload</b>");
@@ -264,7 +277,6 @@
 		// Remove entry from database
 		// Check if file is used by other users
 		// Delete if not
-		// Remove file from all users who have had it shared to them
 	}
 	
 	function addToPlaylist($username, $songName, $playlistName) {
