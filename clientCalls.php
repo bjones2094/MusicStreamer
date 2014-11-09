@@ -1,4 +1,7 @@
 <?php
+	ini_set('display_errors',1);
+	error_reporting(E_ALL);
+	
 	include "tagReader.php";
 
 	/*
@@ -7,7 +10,7 @@
 	 */
 
 	// Use this line to connect to database:
-	// $connect new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+	// $connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 
 
 	// createUser function adds user information to database for future log ins
@@ -110,21 +113,32 @@
 		
 		// Get filenames of shared songs from shared file
 		
-		$sharedString = file_get_contents("pathToSharedMusicFile");
-		$sharedList = explode("\n", $sharedString);
+		if(file_exists("pathToSharedMusicFile")) {
 		
-		// Get info for each file from database
+			$sharedString = file_get_contents("pathToSharedMusicFile");
+			$sharedList = explode("\n", $sharedString);
 		
-		foreach($sharedList as $fileName) {
-			$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
-			$stmt->bind_param("s", $filename);
-			$stmt->execute();
+			// Get info for each file from database
+		
+			foreach($sharedList as $fileName) {
+				$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
+				$stmt->bind_param("s", $fileName);
+				$stmt->execute();
 			
-			$result = $stmt->get_result();
-			$row = $result->fetch_array();
+				$result = $stmt->get_result();
+				$row = $result->fetch_array();
 			
-			$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "s";
-			$library []= $songInfo;
+				// If file not in database, remove from shared file
+			
+				if($row == NULL) {
+					$sharedString = str_replace($fileName . "\n", "", $sharedString);	// Remove non-existent file name
+				}
+			
+				$songInfo = $row["title"] . ":" . $row["artist"] . ":" . $row["album"] . "s";
+				$library []= $songInfo;
+			}
+		
+			file_put_contents($fileName, $sharedString);		// Update file after any changes are made
 		}
 		
 		// Might want to only show first 10/20/30 songs?
@@ -139,9 +153,14 @@
 	}
 	
 	function uploadSong($username) {
+		if(!is_uploaded_file($_FILES["uploadedFile"]["tmp_name"])) {	// File not selected
+			print("<b>File failed to upload</b>");
+			return false;
+		}
+		
 		// Check file extension
 	
-		$checkName = basename($_FILES["uploadedFile"]["name"]);
+		$checkName = "./MusicFiles/" . basename($_FILES["uploadedFile"]["name"]);
 		$info = pathinfo($checkName);
 		$fileExtension = $info["extension"];
 		
@@ -154,34 +173,37 @@
 	
 		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 		
-		$stmt = $connect->prepare("SELECT MAX(id) FROM music");
+		$stmt = $connect->prepare("SELECT MAX(id) AS prevId FROM music");
+		if(!$stmt) {
+			print("<b>Error connecting to database</b>");
+			return false;
+		}
 		$stmt->execute();
 		
 		$results = $stmt->get_result();
-		$row = $results->fetch_array();
+		$row = $results->fetch_assoc();
 		
-		if($row == NULL) {	// First file in db
+		if($row["prevId"] == "") {	// First file in db
 			$newId = 0;
 		}
 		else {
-			$prevId = $row["id"];	// Current highest id
+			$prevId = $row["prevId"];	// Current highest id
 			$newId = $prevId + 1;
 		}
 		
 		$fileName = "./MusicFiles/" . $newId . ".mp3";
 	
-		else if(file_exists($fileName)){
+		if(file_exists($fileName)){
 			print("<b>A file with that id already exists</b>");
 			return false;
 		}
-		else if($_FILES["uploadedFile"]["size"] >= 500000) {	// File too big
+		else if($_FILES["uploadedFile"]["size"] >= 500000000) {	// File too big
 			print("<b>File must be smaller than 500MB</b>");
 			return false;
 		}
 		else {		
-			if(move_uploaded_file($_FILE["uploadedFile"]["tmp_name"], $fileName)) {
-				print("Success");
-				//addSongToDB($username, $fileName);
+			if(move_uploaded_file($_FILES["uploadedFile"]["tmp_name"], $fileName)) {
+				addSongToDB($username, $fileName);
 				return true;
 			}
 			else {
@@ -193,14 +215,17 @@
 	
 	function addSongToDB($username, $fileName) {
 		if(file_exists($fileName)) {
-			$reader = new ID3TagsReader();
-			$tags = $reader->getTagsInfo($fileName);
-			
 			$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 			
 			// Check if user exists
 			
-			$stmt = $connect->prepare("SELECT FROM users WHERE username = ?");
+			$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+			
+			if(!$stmt) {
+				print("<b>Error connecting to database</b>");
+				return false;
+			}
+			
 			$stmt->bind_param("s", $username);
 			$stmt->execute();
 			
@@ -211,9 +236,26 @@
 				print("User does not exist in database");
 			}
 			else {		// Insert tags into database
-				$stmt = $connect->prepare("INSERT INTO music (file_name, title, artist, album, owner), VALUES (?, ?, ?, ?, ?)");
-				$stmt->bind_param("sssss", $fileName, $tags["Title"], $tags["Author"], $tags["Album"], $username);
-				$stmt->execute();
+				$userId = $row["id"];
+				$stmt = $connect->prepare("INSERT INTO music (file_name, title, artist, album, owner) VALUES (?, ?, ?, ?, ?)");
+				
+				if(!$stmt) {
+					print("<b>Error connecting to database</b>");
+					return false;
+				}
+				
+				// Extract ID3 tags from file
+				
+				// TODO: Check if tags exist, prompt user for custom tags
+				
+				$reader = new ID3TagsReader();
+				$tags = $reader->getTagsInfo($fileName);
+				
+				$stmt->bind_param("sssss", $fileName, $tags["Title"], $tags["Author"], $tags["Album"], $userId);
+				
+				if(!$stmt->execute()) {
+					print("Bad query");
+				}
 			}
 		}
 	}

@@ -2,7 +2,7 @@
 
 <?php 
 
-	include 'clientCalls.php';
+	//include 'clientCalls.php';
 	
 ?>
 
@@ -22,7 +22,7 @@ music.Apolymoxic.com is under construction. Please check back later.
 
 <h1>Login</h1>
 
-<table width="100%" border="1">
+<table width="90%" border="1" align="center">
 	<tr width="100%">
 		<td width="48%" valign="top">
 			<b>Returning User?</b> Please log in below...<br /><br />
@@ -34,7 +34,7 @@ music.Apolymoxic.com is under construction. Please check back later.
 					
 					// Need to check if fields are empty
 					
-					if(logIn($_REQUEST["username"], $_REQUEST["password"])) {
+					if(logIn($_POST["username"], $_POST["password"])) {
 						print("Logged in");
 					}
 					else {
@@ -60,7 +60,7 @@ music.Apolymoxic.com is under construction. Please check back later.
 					
 					// Need to check if fields are empty
 					
-					if($_REQUEST["reqPassword"] == $_REQUEST["verPassword"]) {
+					if($_POST["reqPassword"] == $_POST["verPassword"]) {
 						createUser($_REQUEST["reqUsername"], $_REQUEST["reqPassword"]);
 					}
 					else {

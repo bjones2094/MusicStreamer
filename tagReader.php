@@ -66,8 +66,17 @@ class ID3TagsReader {
 
     // functions
     function getTagsInfo($sFilepath) {
+    	if(!file_exists($sFilepath)) {
+    		return NULL;
+    	}
+    
         // read source file
         $iFSize = filesize($sFilepath);
+        
+        if($iFSize <= 0) {
+        	return NULL;
+        }
+        
         $vFD = fopen($sFilepath,'r');
         $sSrc = fread($vFD,$iFSize);
         fclose($vFD);
@@ -76,6 +85,9 @@ class ID3TagsReader {
         if (substr($sSrc,0,3) == 'ID3') {
             $aInfo['FileName'] = $sFilepath;
             $aInfo['Version'] = hexdec(bin2hex($sSrc[3])).'.'.hexdec(bin2hex($sSrc[4]));
+        }
+        else {
+        	return NULL;
         }
 
         // passing through possible tags of idv2 (v3 and v4)
