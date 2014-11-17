@@ -32,7 +32,7 @@
 		print("<b>Album:</b> " . $row["album"]);
 		print("&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp");
 		
-		print("<b>Owner ID:</b> " . $row["owner"]);
+		print("<b>Owner:</b> " . $row["owner"]);
 		print("&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp");
 		
 		print("<br><br>");
