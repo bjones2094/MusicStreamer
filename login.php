@@ -3,19 +3,28 @@
 <?php 
 	//Include the file with all of the calling functions
 	include 'clientCalls.php';
+	
+	/* Eventually - include a statement to see if the session is already started. If it is
+	 * forward the user on to the player. If not, let the user sign in
+	 * May need to start the session early to make this work. */
+	 
 ?>
 
 <HTML XMLNS="http://www.w3.org/1999/xhtml">
 <head>
-	<TITLE>music.Apolymoxic.com</TITLE>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<title>music.Apolymoxic.com</title>
+	<!--<base href="http://music.apolymoxic.com/" />-->
+	<link rel="stylesheet" href="css/musicSite.css" type="text/css" />
+
 </head>
 
-<Body BGCOLOR="WHITE">
+<body>
 
-<center><IMG SRC="images/banner.jpg" WIDTH="950" HEIGHT="200" BORDER="0" ALT=""><BR /><BR />
+<br />
+<center><IMG SRC="images/banner.jpg" WIDTH="950" HEIGHT="118" BORDER="0" ALT=""><BR /><BR />
 
-<font color="BLACK">
-music.Apolymoxic.com is under construction!
+Welcome! music.Apolymoxic.com is under construction!
 
 </center>
 
@@ -27,10 +36,27 @@ music.Apolymoxic.com is under construction!
 	</tr>
 </table>
 
-<table width="90%" border="1" align="center">
+<table width="90%" border="0">
+	<tr>
+		<td>
+		
+<table width="50%" border="0" cellpadding="0" cellspacing="0" align="left">
+	
+	<tr width="100%">
+		<td width="27" align="right"><img src="images/tlcorner.jpg" width="27" height="27" valign="top"></td>
+		<td width="100" align="left" background="images/tbar.jpg"><img src="images/tlbar.jpg" width="100" height="27" valign="top"></td>
+		<td width="100%" align="center" background="images/tbar.jpg"><img src="images/tbar.jpg" width="4" height="27" valign="top"></td>
+		<td width="110" align="right" background="images/tbar.jpg"><img src="images/trbar.jpg" width="110" height="27" valign="top"></td>
+		<td width="29" align="left"><img src="images/trcorner.jpg" width="29" height="27" valign="top"></td>
+	</tr>
 
 	<tr width="100%">
-		<td width="48%" valign="top">
+		<td width="27" align="right" valign="top">
+			<img src="images/ltbar.jpg" width="27" height="101" valign="top"><br />
+			<img src="images/lbbar.jpg" width="27" height="101" valign="bottom"><br />
+		</td>
+			
+		<td class="content" colspan="3">
 			<b>Returning User?</b> Please log in below...<br /><br />
 			<?php
 			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -45,27 +71,32 @@ music.Apolymoxic.com is under construction!
 						}
 					} else {
 						// If username and password are filled, continue
-						$logUserIn = login($_REQUEST["username"], $_REQUEST["password"]);
+						$username = $_REQUEST["username"];
+						$thePW = $_REQUEST["password"];
+						$logUserIn = login($username, $thePW);
 						
 						// If error on connection to the database  
 						if ($logUserIn === 'Connection Error') {
-							print ("There was an error connecting to the database. Please try back later.");
+							print ("There was an error connecting to the database. Please try again later.");
 						}
 						
 						// If no user is found
 						else if ($logUserIn === 'NoUser') {
-							print ("Invalid Credentials (No User Found)- Please try again");
+							print ("Invalid Login - Please try again");
 						} 
-					
-						// If user is found (successful login) - start session and forward to new page
-						else if ($logUserIn === 'UserFound') {
-							print ("User Found... Redirecting to site...");
-							header("Location: player.php");
-						}
 						
 						// User is found, but incorrect password 
 						else if($logUserIn == false){
-							print("Incorrect Login");
+							print("Invalid Login - Please try again");
+						}
+						
+						// If user is found (successful login) - start session and forward to new page
+						else {
+							print ("User Found... Redirecting to site...");
+							session_start();
+							$_SESSION['username'] = $username;
+							$_SESSION['email'] = $logUserIn;
+							header("Location: player.php");
 						}
 					}
 				}
@@ -85,8 +116,41 @@ music.Apolymoxic.com is under construction!
 				<input type="submit" name="login" value="Log In">
 			</form>
 		</td>
-		<td width="52%" valign="top">
+		
+		<td width="29" align="left" valign="bottom">
+			<img src="images/rtbar.jpg" width="29" height="101" valign="top"><br />
+			<img src="images/rbbar.jpg" width="29" height="101" valign="bottom"><br />
+		</td>
+	</tr>
+	
+	<tr width="100%" height="29" valign="bottom">
+		<td width="27" align="right"><img src="images/blcorner.jpg" width="27" height="29" valign="top"></td>
+		<td width="100" align="left" background="images/bbar.jpg"><img src="images/blbar.jpg" width="100" height="29" valign="top"></td>
+		<td width="100%" align="center" background="images/bbar.jpg"><img src="images/bbar.jpg" width="4" height="29" valign="top"></td>
+		<td width="110" align="right" background="images/bbar.jpg"><img src="images/brbar.jpg" width="110" height="29" valign="top"></td>
+		<td width="29" align="left"><img src="images/brcorner.jpg" width="29" height="29" valign="top"></td>
+	</tr>
+
+</table>
+<table width="50%" border="0" cellpadding="0" cellspacing="0" align="right">
+	
+	<tr width="100%">
+		<td width="27" align="right"><img src="images/tlcorner.jpg" width="27" height="27" valign="top"></td>
+		<td width="100" align="left" background="images/tbar.jpg"><img src="images/tlbar.jpg" width="100" height="27" valign="top"></td>
+		<td width="100%" align="center" background="images/tbar.jpg"><img src="images/tbar.jpg" width="4" height="27" valign="top"></td>
+		<td width="110" align="right" background="images/tbar.jpg"><img src="images/trbar.jpg" width="110" height="27" valign="top"></td>
+		<td width="29" align="left"><img src="images/trcorner.jpg" width="29" height="27" valign="top"></td>
+	</tr>
+
+	<tr width="100%">
+		<td width="27" align="right" valign="top">
+			<img src="images/ltbar.jpg" width="27" height="101" valign="top"><br />
+			<img src="images/lbbar.jpg" width="27" height="101" valign="bottom"><br />
+		</td>
+			
+		<td class="content" colspan="3">
 			<b>New User?</b> Please sign up. It's Free!<br /><br />
+			
 			<?php
 			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 			//If something was posted, check to see if the section was the "create an account"
@@ -96,11 +160,11 @@ music.Apolymoxic.com is under construction!
 						print ("Please enter the user name you would like...<br />");
 					}
 					
-					if ($_POST["reqPassword"] == "") {
+					else if ($_POST["reqPassword"] == "") {
 						print ("Password cannot be blank <br />");
 					}
 					// Check for password match
-					if ($_POST["reqPassword"] == $_POST["verPassword"]) {
+					else if ($_POST["reqPassword"] == $_POST["verPassword"]) {
 						
 						// check for valid email address
 						$goodEmail = validEmail($_REQUEST["email"]);
@@ -125,6 +189,7 @@ music.Apolymoxic.com is under construction!
 			}
 			?>
 			
+			
 			<form action="<?php $_SERVER['SCRIPT_NAME']?>" method="POST">
 				<table width="100%" border="0" align="left">
 					<tr width="100%">
@@ -146,6 +211,23 @@ music.Apolymoxic.com is under construction!
 				</table>
 				<input type="submit" name="create" value="Create Account">
 			</form><br />
+		</td>
+		
+		<td width="29" align="left" valign="bottom">
+			<img src="images/rtbar.jpg" width="29" height="101" valign="top"><br />
+			<img src="images/rbbar.jpg" width="29" height="101" valign="bottom"><br />
+		</td>
+	</tr>
+	
+	<tr width="100%" height="29" valign="bottom">
+		<td width="27" align="right"><img src="images/blcorner.jpg" width="27" height="29" valign="top"></td>
+		<td width="100" align="left" background="images/bbar.jpg"><img src="images/blbar.jpg" width="100" height="29" valign="top"></td>
+		<td width="100%" align="center" background="images/bbar.jpg"><img src="images/bbar.jpg" width="4" height="29" valign="top"></td>
+		<td width="110" align="right" background="images/bbar.jpg"><img src="images/brbar.jpg" width="110" height="29" valign="top"></td>
+		<td width="29" align="left"><img src="images/brcorner.jpg" width="29" height="29" valign="top"></td>
+	</tr>
+</table>
+
 		</td>
 	</tr>
 </table>

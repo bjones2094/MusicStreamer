@@ -8,7 +8,6 @@
 
 	/*
 	 * Functions called by client to request a service or resource from the server
-	 * REMEMBER TO ALWAYS SANITIZE INPUTS!!!
 	 */
 
 	// Use this line to connect to database:
@@ -69,6 +68,38 @@
 			$stmt->bind_param("s", $username);
 			$stmt->execute();
 			
+			if(file_exists("./playlists/" . $username . "Library.json")) {
+				unlink("./playlists/" . $username . "Library.json");
+			}
+			if(file_exists("./playlists/" . $username . "Playlists.json")) {
+				unlink("./playlists/" . $username . "Playlists.json");
+			}
+			
+			$stmt = $connect->prepare("SELECT * FROM music WHERE owner = ?");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+			
+			$result = $stmt->get_result();
+			
+			while($row = $result->fetch_array()) {
+				$stmt = $connect->prepare("SELECT * FROM music WHERE file_name = ? AND owner != ?");
+				$stmt->bind_param("ss", $row["file_name"], $username);
+				$stmt->execute();
+				
+				$otherResult = $stmt->get_result();
+				$otherRow = $otherResult->fetch_array();
+				
+				if($otherRow == NULL) {
+					if(file_exists($row["file_name"])) {
+						unlink($row["file_name"]);
+					}
+				}
+			}
+			
+			$stmt = $connect->prepare("DELETE FROM music WHERE owner = ?");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+			
 			return "UserDeleted";
 		}
 	}
@@ -110,7 +141,7 @@
 			$compare = $row["password"];
 			
 			if($password == $compare) {
-				return 'UserFound';
+				return $row["email"];
 			}
 			else {
 				return false;
@@ -120,75 +151,52 @@
 			return 'MultiUser';
 		}
 	}
-
-	// getLibrary function is used to get the users music library to display to the user
-
-	function getLibrary($username) {
-		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
-		
-		// Get all music uploaded by user from database
-		
-		$stmt = $connect->prepare("SELECT * FROM music WHERE owner=?");
-		$stmt->bind_param("s", $username);
-		$stmt->execute();
-		
-		$result = $stmt->get_result();
-		
-		$library = array();		// Holds each song as an associative array;
-		
-		while($row = $result->fetch_array())
-		{
-			$songInfo = $row;
-			$songInfo["permission"] = "u";
-			$library []= $songInfo;
+	
+	function shareSong($sender, $receiver, $fileName, $title, $artist, $album) {
+		if($sender == $receiver) {
+			return false;
 		}
-		
-		// Get filenames of shared songs from shared file
-		
-		if(file_exists($username . "Shared")) {
-		
-			$sharedString = file_get_contents($username . "Shared");
-			$sharedList = explode("\n", $sharedString);
-		
-			// Get info for each file from database
-		
-			foreach($sharedList as $fileName) {
-				if(!file_exists($fileName)) {
-					$sharedString = str_replace($fileName . "\n", "", $sharedString);	// Remove non-existent file name
-				}
-				else {
-					$stmt = $connect->prepare("SELECT * FROM music WHERE filename=?");
-					$stmt->bind_param("s", $fileName);
-					$stmt->execute();
-			
-					$result = $stmt->get_result();
-					$row = $result->fetch_array();
-			
-					$songInfo = $row;
-					$songInfo["permission"] = "s";
-					$library []= $songInfo;
-				}
-			}
-		
-			if($sharedString == "") {
-				unlink($username . "Shared");		// Delete file if it's empty
-			}
-			else {
-				file_put_contents($username . "Shared", $sharedString);		// Update file after any changes are made
-			}
+		else {
+			createPlaylist($receiver, "Shared");
+			addToPlaylist($receiver, "Shared", $fileName, $title, $artist, $album);
+			return true;
 		}
-		
-		// Might want to only show first 10/20/30 songs?
-		
-		return $library;
 	}
 	
-	function shareSong($sender, $receiver, $songName) {
-		// Check that sender and receiver aren't same person (someone would actually try this)
-		// Check if user exists
-		// Check if user's shared file exists
-		// Create file if necessary
-		// Add filename of shared song to receiver's shared file
+	function unshareSong($sender, $receiver, $fileName) {
+		if($sender == $receiver) {
+			return false;
+		}
+		else {
+			removeFromPlaylist($receiver, "Shared", $fileName);
+			return true;
+		}
+	}
+	
+	function updatePlaylist($username, $playlistName) {
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
+			
+			if(isset($jsonObject->$playlistName)) {
+				$playlist = $jsonObject->Shared;
+				
+				foreach($playlist as $key => $songInfo) {
+					if(!file_exists($songInfo->mp3)) {
+						unset($playlist[$key]);
+						$jsonObject->Shared = $playlist;
+						file_put_contents($jsonFileName, json_encode($jsonObject));
+					}
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
 	}
 	
 	function uploadSong($username) {
@@ -226,23 +234,13 @@
 	
 		// Create file name based off id
 		
-		$stmt = $connect->prepare("SELECT MAX(id) AS prevId FROM music");
-		if(!$stmt) {
-			print("<b>Error connecting to database</b>");
-			return false;
-		}
+		$stmt = $connect->prepare("SELECT `AUTO_INCREMENT` FROM  INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = 'music_db' AND TABLE_NAME = 'music'");
 		$stmt->execute();
 		
 		$results = $stmt->get_result();
-		$row = $results->fetch_assoc();
+		$row = $results->fetch_array();
 		
-		if($row["prevId"] == "") {	// First file in db
-			$newId = 0;
-		}
-		else {
-			$prevId = $row["prevId"];	// Current highest id
-			$newId = $prevId + 1;
-		}
+		$newId = $row["AUTO_INCREMENT"];	// Gets next auto increment value from db
 		
 		$fileName = "./MusicFiles/" . $newId . ".mp3";
 	
@@ -265,150 +263,221 @@
 		}
 	}
 	
-	function addSongToDB($username, $fileName) {
+	function addSongToDB($username, $fileName, $title, $artist, $album) {
 		if(file_exists($fileName)) {
 			$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 			
-			// Insert tags into database
 			$stmt = $connect->prepare("INSERT INTO music (file_name, title, artist, album, owner) VALUES (?, ?, ?, ?, ?)");
-			
-			// Extract ID3 tags from file
-			
-			$reader = new ID3TagsReader();
-			$tags = $reader->getTagsInfo($fileName);
-			
-			$stmt->bind_param("sssss", $fileName, $tags["Title"], $tags["Author"], $tags["Album"], $username);
+			$stmt->bind_param("sssss", $fileName, $title, $artist, $album, $username);
 			$stmt->execute();
 		}
 	}
 	
-	function removeSongFromDB($username, $songName) {
-		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+	function addToLibrary($username, $fileName, $title, $artist, $album) {
+		$jsonFileName = "./playlists/" . $username . "Library.json";
 		
-		$stmt = $connect->prepare("DELETE FROM music WHERE owner = ? AND title = ?");
-		$stmt->bind_param("ss", $username, $songName);
-		$stmt->execute();
+		$newObject = new stdClass();
+			
+		$newObject->title = $title;
+		$newObject->artist = $artist;
+		$newObject->album = $album;
+		$newObject->mp3 = $fileName;
+		
+		if(file_exists($jsonFileName)) {
+			$jsonArray = json_decode(file_get_contents($jsonFileName));
+			
+			foreach($jsonArray as $songInfo) {
+				if($songInfo->mp3 == $fileName) {
+					return false;
+				}
+			}
+		}
+		else {
+			$jsonArray = array();
+		}
+		
+		$jsonArray []= $newObject;	
+		file_put_contents($jsonFileName, json_encode($jsonArray));
+		
+		return true;
 	}
 	
-	function deleteSong($username, $songName) {
-		// Remove entry from database
-		// Check if file is used by other users
-		// Delete if not
+	function checkForCopy($username, $title, $artist, $album) {
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		$stmt = $connect->prepare("SELECT * FROM music WHERE title = ? AND artist = ? AND album = ?");
+		$stmt->bind_param("sss", $title, $artist, $album);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		$row = $result->fetch_array();
+		
+		if($row == NULL) {	// No file exists with same tags
+			return "NewFile";
+		}
+		else if($row["owner"] == $username) {	// Same user has uploaded this file before
+			return "SameUser";
+		}
+		else {		// Another user has uploaded this song before
+			return $row["file_name"];
+		}
+	}
+	
+	function deleteSong($username, $fileName) {
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		// Delete song info from database
+		
+		$stmt = $connect->prepare("DELETE FROM music WHERE owner = ? AND file_name = ?");
+		$stmt->bind_param("ss", $username, $fileName);
+		$stmt->execute();
+		
+		// Delete song info from library file
+		
+		$jsonFileName = "./playlists/" . $username . "Library.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonArray = json_decode(file_get_contents($jsonFileName));
+			
+			foreach($jsonArray as $key => $songInfo) {
+				if($songInfo->mp3 == $fileName) {
+					unset($jsonArray[$key]);
+					file_put_contents($jsonFileName, json_encode($jsonArray));
+				}
+			}
+		}
+		
+		// Check if other users own the file
+		
+		$stmt = $connect->prepare("SELECT * FROM music WHERE file_name = ?");
+		$stmt->bind_param("s", $fileName);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		$row = $result->fetch_array();
+		
+		// Delete file if no other users own song
+		
+		if($row == NULL) {
+			unlink($fileName);
+			
+			return 'SongDeleted';
+		}
+		else {
+			return 'Song owned by others';
+		}
+		
+		
 	}
 	
 	// Playlist functions
 	
 	function createPlaylist($username, $playlistName) {
-		$fileName = "./playlists/" . $username . "Playlists.ini";
-	
-		if(!file_exists($fileName)) {
-			$playlistFile = fopen($fileName, "w");	// Create file if it doesn't exist yet
-			fclose($playlistFile);
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			
-			$default = array(
-				"$playlistName" =>  array ());	// Initialize empty array for empty playist
-				
-			writeIniFile($default, $fileName, true);
-		}
-		else {
-			$playlists = parse_ini_file($fileName, true);	// Append new playlist to file contents
-			if(!isset($playlists[$playlistName])) {
-				$playlists[$playlistName] = array ();
-				writeIniFile($playlists, $fileName, true);
+			if(isset($jsonObject->$playlistName)) {
+				return false;
 			}
 			else {
-				print("Already there\n");
+				$jsonObject->$playlistName = array();
 			}
-		}			
+		}
+		else {
+			$jsonObject = new stdClass();
+			$jsonObject->$playlistName = array();
+		}
+			
+		file_put_contents($jsonFileName, json_encode($jsonObject));
+		
+		return true;			
 	}
 	
 	function deletePlaylist($username, $playlistName) {
-		$fileName = "./playlists/" . $username . "Playlists.ini";
-	
-		if(file_exists($fileName)) {
-			$playlists = parse_ini_file($fileName, true);
-			if(isset($playlists[$playlistName])) {
-				unset($playlists[$playlistName]);
-				writeIniFile($playlists, $fileName, true);
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
+			
+			if(isset($jsonObject->$playlistName)) {
+				unset($jsonObject->$playlistName);
+				file_put_contents($jsonFileName, json_encode($jsonObject));
+				return true;
 			}
 			else {
-				print("Not there\n");
+				return false;
 			}
 		}
 		else {
-			// File doesn't exist
+			return false;
 		}
 	}
 	
-	function addToPlaylist($username, $playlistName, $songName) {
-		$fileName = "./playlists/" . $username . "Playlists.ini";
+	function addToPlaylist($username, $playlistName, $fileName, $title, $artist, $album) {
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
 		
-		if(file_exists($fileName)) {
-			$playlists = parse_ini_file($fileName, true);
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			
-			if(!in_array($songName, $playlists[$playlistName])) {
-				$playlists[$playlistName] []= $songName;
-				writeIniFile($playlists, $fileName, true);
-			}
-			else {
-				print("Already there\n");
-			}
-		}
-		else {
-			// return error
-		}
-	}
-	
-	function removeFromPlaylist($username, $playlistName, $songName) {
-		$fileName = "./playlists/" . $username . "Playlists.ini";
-		
-		if(file_exists($fileName)) {
-			$playlists = parse_ini_file($fileName, true);
+			if(isset($jsonObject->$playlistName)) {
+				$newObject = new stdClass();
 			
-			if(in_array($songName, $playlists[$playlistName])) {
-				$key = array_search($songName, $playlists[$playlistName]);
-				unset($playlists[$playlistName][$key]);
-				writeIniFile($playlists, $fileName, true);
-			}
-			else {
-				print("Not there\n");
-			}
-		}
-		else {
-			// return error
-		}
-	}
-	
-	function getPlaylist($username, $playlistName) {
-		$fileName = "./playlists/" . $username . "Playlists.ini";
-		
-		if(file_exists($fileName)) {
-			$playlists = parse_ini_file($fileName, true);
-			$returnList = array();
+				$newObject->title = $title;
+				$newObject->artist = $artist;
+				$newObject->album = $album;
+				$newObject->mp3 = $fileName;
 			
-			if(isset($playlists[$playlistName])) {
-				$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
-			
-				foreach($playlists[$playlistName] as $title) {
-					$stmt = $connect->prepare("SELECT * FROM music WHERE title = ? AND owner = ?");
-					$stmt->bind_param("ss", $title, $username);
-					$stmt->execute();
-					
-					$result = $stmt->get_result();
-					$row = $result->fetch_array();
-					$row["permission"] = "u";
-					
-					$returnList []= $row;
+				$playlist = $jsonObject->$playlistName;
+				
+				foreach($playlist as $songInfo) {
+					if($songInfo->mp3 == $fileName) {
+						return false;
+					}
 				}
 				
-				return $returnList;
+				$playlist []= $newObject;
+				$jsonObject->$playlistName = $playlist;
+				
+				file_put_contents($jsonFileName, json_encode($jsonObject));
+				
+				return true;
 			}
 			else {
-				// Playlist doesn't exist
+				return false;
 			}
 		}
 		else {
-			// return error
+			return false;
+		}
+	}
+	
+	function removeFromPlaylist($username, $playlistName, $fileName) {
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
+			
+			if(isset($jsonObject->$playlistName)) {
+				$playlist = $jsonObject->$playlistName;
+				
+				foreach($playlist as $key => $songInfo) {
+					if($songInfo->mp3 == $fileName) {
+						unset($playlist[$key]);
+						$jsonObject->$playlistName = $playlist;
+						file_put_contents($jsonFileName, json_encode($jsonObject));
+						return true;
+					}
+				}
+				return false;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
 		}
 	}
 	
@@ -416,58 +485,58 @@
 	
 	function basicSearch($username, $query) {
 		// Query database with user query across all fields (e.g. title, artist, album)
+		
+	$jsonFileName = "./playlists/" . $username . "Library.json";
+
+		if(file_exists($jsonFileName)) {
+			$jsonArray = json_decode(file_get_contents($jsonFileName));
+			$jsonSearchArray = array();
+			$newObject = new stdClass();
+
+			
+			foreach($jsonArray as $songInfo) {
+				if($songInfo->title == $query || $songInfo->artist == $query || $songInfo->album == $query) {
+							
+					$newObject->title = $songInfo->title;
+					$newObject->artist =  $songInfo->artist;
+					$newObject->album = $songInfo->album;
+					$newObject->mp3 = $songInfo->mp3;
+					$jsonSearchArray []= $newObject;
+				}
+			}
+		}
+
+		return json_encode($jsonSearchArray);
+		
 	}
 	
 	function advancedSearch($username, $title, $artist, $album) {
 		// If field is NULL, don't use it, otherwise query database with correct terms
-	}
-	
-	// Custom function to create ini files from associative arrays
-	
-	function writeIniFile($assoc_arr, $path, $has_sections=FALSE) { 
-    		$content = ""; 
-	    	if ($has_sections) { 
-			foreach ($assoc_arr as $key=>$elem) { 
-				$content .= "[" . $key . "]\n"; 
-			 	foreach ($elem as $key2=>$elem2) { 
-					if(is_array($elem2)) {
-				    		for($i=0;$i<count($elem2);$i++) {
-				        		$content .= $key2 . "[] = \"" . $elem2[$i] . "\"\n"; 
-				    		}
-					}
-					else if($elem2 == "") { 
-						$content .= $key2 . " = \n";
-					}
-					else {
-						$content .= $key2 . " = \"".$elem2."\"\n";
-					}
-			    	}
+		
+		$jsonFileName = "./playlists/" . $username . "Library.json";
+
+		if(file_exists($jsonFileName)) {
+			$jsonArray = json_decode(file_get_contents($jsonFileName));
+			$jsonSearchArray = array();
+			$newObject = new stdClass();
+
+			
+			foreach($jsonArray as $songInfo) {
+				if(($songInfo->title == $title || $songInfo->title == NULL) &&
+				  ($songInfo->artist == $artist || $songInfo->title == NULL) &&
+				  ($songInfo->album == $album || $songInfo->title == NULL )) {
+							
+					$newObject->title = $songInfo->title;
+					$newObject->artist =  $songInfo->artist;
+					$newObject->album = $songInfo->album;
+					$newObject->mp3 = $songInfo->mp3;
+					$jsonSearchArray []= $newObject;
+				}
 			}
-	    	}
-	    	else { 
-			foreach ($assoc_arr as $key=>$elem) { 
-				if(is_array($elem)) {
-					for($i=0;$i<count($elem);$i++) {
-				    		$content .= $key . "[] = \"" . $elem[$i] . "\"\n"; 
-					} 
-			    	} 
-			    	else if($elem=="") {
-			    		$content .= $key . " = \n";
-			    	}
-			    	else {
-			    		$content .= $key . " = \"" . $elem . "\"\n";
-			    	}
-			}
-	    	}
+		}
 
-	    	if (!$handle = fopen($path, 'w')) { 
-			return false; 
-	    	}
-
-	   	$success = fwrite($handle, $content);
-	    	fclose($handle); 
-
-		return $success;
+		return json_encode($jsonSearchArray);
+	
 	}
 	
 ?>
