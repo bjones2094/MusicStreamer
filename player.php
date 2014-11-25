@@ -42,16 +42,6 @@
 	
 	<script type="text/javascript">
     $(document).ready(function(){
-		var PL1 = [{
-				title:"Cro Magnon Man",
-				mp3:"http://www.jplayer.org/audio/mp3/TSP-01-Cro_magnon_man.mp3",
-				oga:"http://www.jplayer.org/audio/ogg/TSP-01-Cro_magnon_man.ogg"
-			},
-			{
-				title:"Your Face",
-				mp3:"http://www.jplayer.org/audio/mp3/TSP-05-Your_face.mp3",
-				oga:"http://www.jplayer.org/audio/ogg/TSP-05-Your_face.ogg"
-			}];
 
 		var PL2 = [{
 				title:"Tempered Song",
@@ -183,7 +173,6 @@
 	<tr width="100%">
 		<td width="100%" align="center" valign="top">
 			<button type="button" id="clear"> Clear Playlist </button>
-			<button type="button" id="setPL1"> Set Playlist 1</button>
 			<button type="button" id="setPL2"> Set Playlist 2</button>
 		</td>
 	</tr>
