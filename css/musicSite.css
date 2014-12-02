@@ -1,0 +1,72 @@
+/* Body Data */
+body {
+	font-family:Verdana, Arial, sans-serif;
+	font-size: 12px;
+	color: White;
+	background-color: Black;
+	margin: 0;
+	padding: 0;
+	line-height: 1.3;
+}
+
+
+/* Link Styles */
+A#basic:link, A:visited, A:active, {text-decoration: underline; color: #2457A4;}
+A#basic:hover {text-decoration: none; color: #AA0000;}
+
+a:link, a:visited, a:active {color: #66ddee;text-decoration: underline;}
+a:hover {text-decoration: none; color: #AA0000;}
+
+
+/* Organization Classes */
+.content {
+	background-color: White; 
+	font-family: Arial, Helvetica, Sans-Serif; 
+	font-size: 12px; 
+	color: Black; 
+	font-style: normal; 
+	vertical-align: Top; 
+}
+
+.locator {
+	background-color: Black;
+	font-family: Arial, Helvetica, Sans-Serif; 
+	font-size: 12px; 
+	color: White; 
+	font-style: normal; 
+	vertical-align: Top; 
+}
+
+.nowplaying {
+	background-color: White; 
+	font-family: Arial, Helvetica, Sans-Serif; 
+	font-size: 9pt; 
+	color: Black; 
+	font-style: normal; 
+	vertical-align: Top; 
+	text-align: center;
+}	
+
+img{
+ border:0;
+ vertical-align:top;
+}
+
+/* Table Data */
+table {
+	border-collapse: collapse;
+	border-spacing: 0;
+	border: 0; 
+	padding: 0; 
+	margin: 0px auto;
+}
+
+table.showtable {border: 0; padding: 10; margin: 0 auto;}
+
+td, th {
+	border-bottom: 0;
+	border: 0; 
+	padding: 0; 
+}
+
+ul, li {text-align: left;}

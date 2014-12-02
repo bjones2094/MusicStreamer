@@ -8,24 +8,28 @@
 	 * forward the user on to the player. If not, let the user sign in
 	 * May need to start the session early to make this work. */
 	 
+    session_start();
+    if(isset($_SESSION["username"])) {
+        header("Location: http://music.apolymoxic.com/player.php");
+    }
+
 ?>
 
-<HTML XMLNS="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
 	<title>music.Apolymoxic.com</title>
+	
+	<!-- base href (commented) and css for site as a whole -->
 	<!--<base href="http://music.apolymoxic.com/" />-->
 	<link rel="stylesheet" href="css/musicSite.css" type="text/css" />
 
 </head>
-
 <body>
 
 <br />
-<center><IMG SRC="images/banner.jpg" WIDTH="950" HEIGHT="118" BORDER="0" ALT=""><BR /><BR />
-
-Welcome! music.Apolymoxic.com is under construction!
-
+<center>
+	<img src="images/banner.jpg" width="950" height="118" border="0" alt=""><br /><br />
 </center>
 
 <table width="90%" border="0" align="center">
@@ -39,9 +43,9 @@ Welcome! music.Apolymoxic.com is under construction!
 <table width="90%" border="0">
 	<tr>
 		<td>
-		
-<table width="50%" border="0" cellpadding="0" cellspacing="0" align="left">
 	
+<!-- table for returning users login -->
+<table width="50%" border="0" cellpadding="0" cellspacing="0" align="left">
 	<tr width="100%">
 		<td width="27" align="right"><img src="images/tlcorner.jpg" width="27" height="27" valign="top"></td>
 		<td width="100" align="left" background="images/tbar.jpg"><img src="images/tlbar.jpg" width="100" height="27" valign="top"></td>
@@ -51,11 +55,12 @@ Welcome! music.Apolymoxic.com is under construction!
 	</tr>
 
 	<tr width="100%">
-		<td width="27" align="right" valign="top">
+		<td width="27" align="right" valign="top" background="images/lbar.jpg">
 			<img src="images/ltbar.jpg" width="27" height="101" valign="top"><br />
 			<img src="images/lbbar.jpg" width="27" height="101" valign="bottom"><br />
 		</td>
-			
+		
+		<!-- User login container -->		
 		<td class="content" colspan="3">
 			<b>Returning User?</b> Please log in below...<br /><br />
 			<?php
@@ -77,17 +82,17 @@ Welcome! music.Apolymoxic.com is under construction!
 						
 						// If error on connection to the database  
 						if ($logUserIn === 'Connection Error') {
-							print ("There was an error connecting to the database. Please try again later.");
+							print ("<b>There was an error connecting to the database. Please try again later.</b><br /><br />");
 						}
 						
 						// If no user is found
 						else if ($logUserIn === 'NoUser') {
-							print ("Invalid Login - Please try again");
+							print ("<b><u>Invalid User</u> - Please try again.</b><br /><br />");
 						} 
 						
 						// User is found, but incorrect password 
 						else if($logUserIn == false){
-							print("Invalid Login - Please try again");
+							print("<b><u>Invalid Login</u> - Please try again.</b><br /><br />");
 						}
 						
 						// If user is found (successful login) - start session and forward to new page
@@ -96,7 +101,8 @@ Welcome! music.Apolymoxic.com is under construction!
 							session_start();
 							$_SESSION['username'] = $username;
 							$_SESSION['email'] = $logUserIn;
-							header("Location: player.php");
+							$_SESSION["lastViewTime"] = time();
+							header("Location: http://music.apolymoxic.com/player.php");
 						}
 					}
 				}
@@ -117,7 +123,7 @@ Welcome! music.Apolymoxic.com is under construction!
 			</form>
 		</td>
 		
-		<td width="29" align="left" valign="bottom">
+		<td width="29" align="left" valign="bottom" background="images/rbar.jpg">
 			<img src="images/rtbar.jpg" width="29" height="101" valign="top"><br />
 			<img src="images/rbbar.jpg" width="29" height="101" valign="bottom"><br />
 		</td>
@@ -130,10 +136,10 @@ Welcome! music.Apolymoxic.com is under construction!
 		<td width="110" align="right" background="images/bbar.jpg"><img src="images/brbar.jpg" width="110" height="29" valign="top"></td>
 		<td width="29" align="left"><img src="images/brcorner.jpg" width="29" height="29" valign="top"></td>
 	</tr>
-
 </table>
+
+<!-- table for new user creation -->
 <table width="50%" border="0" cellpadding="0" cellspacing="0" align="right">
-	
 	<tr width="100%">
 		<td width="27" align="right"><img src="images/tlcorner.jpg" width="27" height="27" valign="top"></td>
 		<td width="100" align="left" background="images/tbar.jpg"><img src="images/tlbar.jpg" width="100" height="27" valign="top"></td>
@@ -143,11 +149,12 @@ Welcome! music.Apolymoxic.com is under construction!
 	</tr>
 
 	<tr width="100%">
-		<td width="27" align="right" valign="top">
+		<td width="27" align="right" valign="top" background="images/lbar.jpg">
 			<img src="images/ltbar.jpg" width="27" height="101" valign="top"><br />
 			<img src="images/lbbar.jpg" width="27" height="101" valign="bottom"><br />
 		</td>
-			
+		
+		<!-- User creation container -->
 		<td class="content" colspan="3">
 			<b>New User?</b> Please sign up. It's Free!<br /><br />
 			
@@ -157,11 +164,11 @@ Welcome! music.Apolymoxic.com is under construction!
 				if (isset($_POST["create"])) {
 					// Need to check if fields are empty
 					if ($_POST["reqUsername"] == "") {
-						print ("Please enter the user name you would like...<br />");
+						print ("<b>Please enter the user name you would like...</b><br /><br />");
 					}
 					
 					else if ($_POST["reqPassword"] == "") {
-						print ("Password cannot be blank <br />");
+						print ("<b>Password cannot be blank.</b><br /><br />");
 					}
 					// Check for password match
 					else if ($_POST["reqPassword"] == $_POST["verPassword"]) {
@@ -173,17 +180,17 @@ Welcome! music.Apolymoxic.com is under construction!
 							
 							// what happened on the server? Post it
 							if ($userCreation === 'UserExists') {
-								print ("Sorry, but that username is already taken. Please choose another and try again...");
+								print ("<b>Sorry, but that username is already taken. Please choose another and try again.</b><br /><br />");
 							} else {
-								print ("User has been created");
+								print ("<b>User has been created!</b><br /><br />");
 							}
 							
 						} else {
-							print ("Invalid email address");
+							print ("<b>Invalid email address.</b><br /><br />");
 						}
 					}
 					else {
-						print ("<b>Password and Confirm Password do not match</b>");
+						print ("<b>Password and Confirm Password do not match</b><br /><br />");
 					}
 				}	
 			}
@@ -213,7 +220,7 @@ Welcome! music.Apolymoxic.com is under construction!
 			</form><br />
 		</td>
 		
-		<td width="29" align="left" valign="bottom">
+		<td width="29" align="left" valign="bottom" background="images/rbar.jpg">
 			<img src="images/rtbar.jpg" width="29" height="101" valign="top"><br />
 			<img src="images/rbbar.jpg" width="29" height="101" valign="bottom"><br />
 		</td>

@@ -13,7 +13,6 @@
 	// Use this line to connect to database:
 	// $connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
 
-
 	// createUser function adds user information to database for future log ins
 
 	function createUser($username, $password, $email) {
@@ -148,9 +147,188 @@
 			}
 		}
 		else {
-			return 'MultiUser';
+			return false;
 		}
 	}
+	
+	function groupType($username) {
+		// This function should only be called if username and PW are passed in
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
+		}
+		
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		
+		$row = $result->fetch_array();
+		
+		if($row == NULL) {
+			return 'NoUser';
+		}
+		
+		else if($result->fetch_array() == NULL) {	// Only one result
+			return $row['groupId'];
+		}else {
+			return false;
+		}
+	}
+	
+	function userInfo($username) {
+		// This function should only be called if username and PW are passed in
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
+		}
+		
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		
+		$row = $result->fetch_array();
+		
+		if($row == NULL) {
+			return 'NoUser';
+		}
+		
+		else if($result->fetch_array() == NULL) {	// Only one result
+			return array($row['username'], $row['email'], $row['groupId']);
+		}else {
+			return false;
+		}
+	}
+	
+	function pwChange($username, $password, $new_password, $admin) {
+		// This function should only be called if username and PW are passed in
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
+		}
+		
+		if ($admin != "y") {
+			$password = crypt($password, ";&ss!stv");
+			$password = substr($password, 0, 10);		// Shorten the password to only 10 characters
+		}
+		
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		
+		$row = $result->fetch_array();
+		
+		if($row == NULL) {
+			return 'NoUser';
+		}
+		
+		else if($result->fetch_array() == NULL) {	// Only one result
+			// Is this change requested by an admin? If it is, skipping password checking
+			if ($admin == "y"){
+				$new_password = crypt($new_password, ";&ss!stv");	// Hash password before storing
+				$new_password = substr($new_password, 0, 10);		// Only use first 10 characters to keep hash short
+					
+				$stmt = $connect->prepare("UPDATE users SET password = ? WHERE username = ?");
+				$stmt->bind_param("ss", $new_password, $username);
+				$stmt->execute();
+				return 'Success';
+			// If it's not an admin, check the password to ensure valid user
+			} else {
+				$compare = $row["password"];
+			
+				if($password == $compare) {				// Only change if current password matches
+					$new_password = crypt($new_password, ";&ss!stv");	// Hash password before storing
+					$new_password = substr($new_password, 0, 10);		// Only use first 10 characters to keep hash short
+				
+					$stmt = $connect->prepare("UPDATE users SET password = ? WHERE username = ?");
+					$stmt->bind_param("ss", $new_password, $username);
+					$stmt->execute();
+					return 'Success';
+				} else {
+					return 'BadPassword';
+				}
+			}
+		}
+		else {
+			return false;
+		}
+	}
+	
+	function emailChange($username, $new_email) {
+		// This function should only be called if username and PW are passed in
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
+		}
+		
+		// check for valid email. If true, change the email address
+		$GoodEmail = validEmail($new_email);
+		if ($GoodEmail == true){
+			$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+			$stmt->bind_param("s", $username);
+			$stmt->execute();
+		
+			$result = $stmt->get_result();
+		
+			$row = $result->fetch_array();
+		
+			if($row == NULL) {
+				return 'NoUser';
+			}		
+			else if($result->fetch_array() == NULL) {  // Only one result
+		
+				$stmt = $connect->prepare("UPDATE users SET email = ? WHERE username = ?");
+				$stmt->bind_param("ss", $new_email, $username);
+				$stmt->execute();
+				
+				return 'Success';
+			}
+			else {
+				return false;
+			}
+		} else {
+			return 'BadEmail';
+		}
+	}
+	
+	function groupChange($username, $new_group) {
+		// This function should only be called by an admin
+		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
+		
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
+		}
+		
+		$stmt = $connect->prepare("SELECT * FROM users WHERE username = ?");
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+		
+		$result = $stmt->get_result();
+		
+		$row = $result->fetch_array();
+		
+		if($row == NULL) {
+			return 'NoUser';
+		}		
+		else if($result->fetch_array() == NULL) {  // Only one result
+			$stmt = $connect->prepare("UPDATE users SET groupId = ? WHERE username = ?");
+			$stmt->bind_param("ss", $new_group, $username);
+			$stmt->execute();
+				
+			return 'Success';
+		} else {
+			return false;
+		}
+	} 
 	
 	function shareSong($sender, $receiver, $fileName, $title, $artist, $album) {
 		if($sender == $receiver) {
