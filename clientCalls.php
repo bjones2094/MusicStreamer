@@ -593,30 +593,36 @@
 		}
 	}
 	
-	function addToPlaylist($username, $playlistName, $fileName, $title, $artist, $album) {
+function addToPlaylist($username, $playlistName, $files) {
 		$jsonFileName = "./playlists/" . $username . "Playlists.json";
 		
 		if(file_exists($jsonFileName)) {
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			
 			if(isset($jsonObject->$playlistName)) {
+			
+			foreach($files as $info)
+			{
+				$flag= false;
 				$newObject = new stdClass();
 			
-				$newObject->title = $title;
-				$newObject->artist = $artist;
-				$newObject->album = $album;
-				$newObject->mp3 = $fileName;
+				$newObject->title = $info[0];
+				$newObject->artist = $info[1];
+				$newObject->album = $info[2];
+				$newObject->mp3 = $info[3];
 			
 				$playlist = $jsonObject->$playlistName;
 				
 				foreach($playlist as $songInfo) {
-					if($songInfo->mp3 == $fileName) {
-						return false;
+					if($songInfo->mp3 == $info[3]) {
+						$flag=true;
 					}
 				}
-				
-				$playlist []= $newObject;
-				$jsonObject->$playlistName = $playlist;
+				if (!$flag) {
+					$playlist []= $newObject;
+					$jsonObject->$playlistName = $playlist;
+					}
+				}
 				
 				file_put_contents($jsonFileName, json_encode($jsonObject));
 				
@@ -629,36 +635,7 @@
 		else {
 			return false;
 		}
-	}
-	
-	function removeFromPlaylist($username, $playlistName, $fileName) {
-		$jsonFileName = "./playlists/" . $username . "Playlists.json";
-		
-		if(file_exists($jsonFileName)) {
-			$jsonObject = json_decode(file_get_contents($jsonFileName));
-			
-			if(isset($jsonObject->$playlistName)) {
-				$playlist = $jsonObject->$playlistName;
-				
-				foreach($playlist as $key => $songInfo) {
-					if($songInfo->mp3 == $fileName) {
-						unset($playlist[$key]);
-						$jsonObject->$playlistName = $playlist;
-						file_put_contents($jsonFileName, json_encode($jsonObject));
-						return true;
-					}
-				}
-				return false;
-			}
-			else {
-				return false;
-			}
-		}
-		else {
-			return false;
-		}
-	}
-	
+	}	
 	// Search functions
 
  function basicSearch($username, $query) {
