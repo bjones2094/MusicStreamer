@@ -635,6 +635,34 @@ function addToPlaylist($username, $playlistName, $files) {
 		else {
 			return false;
 		}
+	}
+
+	function removeFromPlaylist($username, $playlistName, $fileName) {
+		$jsonFileName = "./playlists/" . $username . "Playlists.json";
+		
+		if(file_exists($jsonFileName)) {
+			$jsonObject = json_decode(file_get_contents($jsonFileName));
+			
+			if(isset($jsonObject->$playlistName)) {
+				$playlist = $jsonObject->$playlistName;
+				
+				foreach($playlist as $key => $songInfo) {
+					if($songInfo->mp3 == $fileName) {
+						unset($playlist[$key]);
+						$jsonObject->$playlistName = $playlist;
+						file_put_contents($jsonFileName, json_encode($jsonObject));
+						return true;
+					}
+				}
+				return false;
+			}
+			else {
+				return false;
+			}
+		}
+		else {
+			return false;
+		}
 	}	
 	// Search functions
 
