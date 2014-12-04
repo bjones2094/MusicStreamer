@@ -660,33 +660,62 @@
 	}
 	
 	// Search functions
-	
-	function basicSearch($username, $query) {
+
+ function basicSearch($username, $query) {
 		// Query database with user query across all fields (e.g. title, artist, album)
 		
-	$jsonFileName = "./playlists/" . $username . "Library.json";
-
-		if(file_exists($jsonFileName)) {
-			$jsonArray = json_decode(file_get_contents($jsonFileName));
-			$jsonSearchArray = array();
-			$newObject = new stdClass();
-
-			
-			foreach($jsonArray as $songInfo) {
-				if($songInfo->title == $query || $songInfo->artist == $query || $songInfo->album == $query) {
-							
-					$newObject->title = $songInfo->title;
-					$newObject->artist =  $songInfo->artist;
-					$newObject->album = $songInfo->album;
-					$newObject->mp3 = $songInfo->mp3;
-					$jsonSearchArray []= $newObject;
-				}
-			}
+	
+    $downQuery = strtolower ($query);
+    
+    $connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");	
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
 		}
-
-		return json_encode($jsonSearchArray);
 		
-	}
+
+		//split it into an array
+		$searchwords = explode(" ",$downQuery);
+		$jsonSearchArray = array();
+		
+		//loop and add the words to the query
+		$queries = "SELECT * FROM music WHERE owner = ? AND (title LIKE '%$searchwords[0]%' OR
+		artist LIKE '%$searchwords[0]%' OR album LIKE '%$searchwords[0]%'";
+
+		for($i = 1;$i < count($searchwords); $i++)
+		{
+    		$queries .= " OR title LIKE '%$searchwords[$i]%' OR artist LIKE '%$searchwords[$i]%'
+    		OR album LIKE '%$searchwords[$i]%'";
+		}
+		$queries .= ")"; 
+		//do the query
+
+		$stmt = $connect->prepare($queries);
+
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+        
+        $result = $stmt->get_result();
+        $row = $result->fetch_array();
+        if($row == NULL) {
+		
+			print 'NoMatch';
+		}		
+		else {
+			 do{
+			 	
+				    $newObject = new stdClass();
+			   		$newObject->title = $row["title"];
+					$newObject->artist =  $row["artist"];
+					$newObject->album = $row["album"];
+					$newObject->mp3 = $row["file_name"];
+					$jsonSearchArray []= $newObject;
+						
+			  } while($row = $result->fetch_array());
+			 
+			  return json_encode($jsonSearchArray);
+		}
+		
+	}	
 	
 	function advancedSearch($username, $title, $artist, $album) {
 		// If field is NULL, don't use it, otherwise query database with correct terms
