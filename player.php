@@ -27,18 +27,11 @@
 	}
 	
 	// Find the user's group - a = admin
+	// We could use the session type set at login, but that doesn't refresh automatically
 	$group = groupType($username);
 	
-	/* The following line has been removed because of a script conflict 
-	 **************
-	 * 	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-	 **************
-	 * Another jquery.min.js is already in use - I left the most recent version posted. 
-	 * IF THE ABOVE IS USED, IT MUST REPLACE THE ONE IN PLACE, OR BE PLACED IN THE CODE PRIOR TO THE EXISTING ONE
-	 * Placement AFTER the existing version (if existing version is on line 30, the above MUST be placed before
-	 * that line), results in neither version working.
-	 *
-	 * In Addition, the jPlayer code MUST be placed BEFORE the flexiGrid code.
+	/* 
+	 * NOTE for below, the jPlayer code MUST be placed BEFORE the flexiGrid code
 	 */
 ?>
 
@@ -49,12 +42,6 @@
 	<!-- base href (commented) and css for site as a whole -->
 	<!--<base href="http://music.apolymoxic.com/" />-->
 	<link rel="stylesheet" href="css/musicSite.css" type="text/css" />
-	
-	<!-- css and js for jquery selectable list (playlist list) [Not needed at this time]
-	<link rel="stylesheet" href="css/jquery-ui.css">
-	<script src="http://code.jquery.com/jquery-1.10.2.js"></script>
-	<script src="js/selectList/jquery-ui.js"></script>
-	-->
 	
 	<!-- css and js for jplayer -->
 	<link type="text/css" href="skins/blue.monday/jplayer.blue.monday.css" rel="stylesheet" />
@@ -87,6 +74,10 @@
 					wmode: "window",
 					smoothPlayBar: false,
 					keyEnabled: true,
+					loop: true,
+					playlistOptions: {
+						loopOnPrevious: true
+					},
 					keyBindings: {
 						volumeUp: {
 							key: 107,
@@ -133,7 +124,7 @@
 				echo "Welcome, " . $username . "!<br />\n";
 				echo "\t" . $_SESSION['email'] . "<br />\n";
 				if($group == "a"){
-					print ("| <a href='admin.php'>Administration</a> ");
+					print ("| <a id='basic' href='admin.php'>Administration</a> ");
 				}
 			?>
 			| Music Player | <a href="settings.php">Settings & Upload</a> | <a href="logout.php">Logout</a> |
@@ -229,7 +220,7 @@
 			<script type="text/javascript">
 				var selectedPL;
 				var PLid;
-
+				
 				$("#flexLIST").flexigrid({
 					url: 'playListNames.php',
 					dataType: 'json',
@@ -237,7 +228,6 @@
 					colResize: false,
 					colModel: [
 						{display: 'Playlist', name: 'playlistName', width: '150', sortable: true, align: 'left', process: changePL},
-						{display: '+', name: 'add', width: '15', sortable: false, align: 'center', process: add_to_playlist}
 						],
 					height: 'auto'
 				});
@@ -263,9 +253,19 @@
 
 						var newURL = "songList.php?playlistName=" + selectedPL;
 						jQuery('#flexSONG').flexOptions({url: newURL}).flexReload();
+						
+						// Create a variable inside the body of the site which will hold the name of 
+						// the current playlist selected. This will help for adding / removing songs,
+						// or deleting the playlist
+						$("body").data("selPL", selectedPL);
 					});
 				}
-
+	
+				function selPL(){
+					// Return the name of the selected playlist
+					
+				}
+				
 				function add_to_playlist(celDiv, id) {
 					var target;
 					$(celDiv).click(function() {
@@ -281,7 +281,6 @@
 								target = $('td[abbr="playlistName"] >div', this).text();
 							i += 1;
 						});
-						console.log(target);
 
 						//for each selected song, do a call to the server to add to target
 					});
@@ -289,6 +288,10 @@
 
 				function remove_from_playlist() {
 					//using selectedPL, PLid, and selected (song info array), use client call
+					getSelected();
+
+					console.log(selected[0]);
+					console.log(selected[1]);
 				}
 
 				function delete_songs() {
@@ -331,12 +334,11 @@
 			</table>
 			<!-- End of separator table -->
 			
-			<!-- Create playlists section -->
+			<!-- Create a playlist section -->
 			<?php
 			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 				// If something was posted...
 				
-				// Find user code
 				if (isset($_POST["createPL"])) {
 					$pl_name = $_REQUEST['new_PL'];
 					if (trim($pl_name) == "") {
@@ -348,7 +350,7 @@
 							print ("<b>Error creating playlist. Please try again later.</b><br /><br />");
 						}
 					}
-				}
+				} 
 			}
 			?>
 			
@@ -360,9 +362,8 @@
 					<tr width="100%" height="5"><td>&nbsp;</td></tr>
 				</table>
 			</form>
+			<!-- End create a playlist section -->
 			
-			
-			<!-- Delete a playlist section -->
 			<!--Separator table -->
 			<table width="90%">
 				<tr width="100%" height="20">
@@ -378,7 +379,83 @@
 			</table>
 			<!-- End of separator table -->
 
-			Delete playlist 
+			<!-- Delete a playlist section -->
+			<?php
+			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+				// If something was posted...
+				
+				if (isset($_POST["deletePL"])) {
+					// No need to do any checks here, there user has alerady been asked
+					// if they really want to delete the playlist - just send the function call
+					$plToDel = $_REQUEST['del_PL'];
+					
+					if ($plToDel == "Library") {
+						print ("<b>You cannot delete the library playlist.</b><br /><br />");
+					} else if ($plToDel == "") {
+						print ("<b>Please select a playlist to delete.</b><br /><br />");
+					} else {
+						$delPL = deletePlaylist($username, $plToDel);
+						
+						if ($delPL == false) {
+							print ("<b>Error creating playlist. Please try again later.</b><br /><br />");
+						}
+					}
+				}
+			}
+			?>
+			
+			 <script type="text/javascript">
+				// Wait for the window to load - force functionality once window has loaded
+				window.onload = function() {
+				
+					// Assign a function to run when link ID'd correctly is clicked
+					var a = document.getElementById("delPL");
+					
+					a.onclick = function() {
+					
+						// Define a variable for the name of the playlist selected
+						$plName = ($("body").data("selPL"));
+					
+						/* If the name of the list is undefined, blank, or Library, we could make a 
+						* message box that simply says:  
+						* alert ("Please select a playlist to delete");
+						* But, in trying to keep the website the same all over, we
+						* will pass a PHP call with the playlist name being blank and
+						* let the PHP function print directly to the page
+						*/
+						if (!$plName) {
+							$plName = "";			// If no playlist is selected, set the name to blank
+							$confirmDel = true;
+						} else if ($plName == "Library") {
+							$confirmDel = true;
+						} else {
+							$confirmDel = confirm("Are you sure you want to delete " + $plName + "?");
+						}
+					
+						if ($confirmDel == true){
+							var form = document.createElement("form");
+							form.action = "<?php $_SERVER['SCRIPT_NAME']?>";
+							form.method = "POST"
+					
+							inputPL = document.createElement("input");
+							inputPL.name = "del_PL";
+							inputPL.value = ($plName);
+	
+							inputSub = document.createElement("input");
+							inputSub.name = "deletePL";
+							inputSub.value = "Delete Playlist";
+							
+							form.appendChild(inputPL);
+							form.appendChild(inputSub);
+						
+							document.body.appendChild(form);
+							form.submit();
+						}
+					}
+				}
+			</script>
+			
+			<a id="delPL" style="text-decoration: underline; color: Red;"} >Delete Playlist</a>
 		
 		</td>
 			
@@ -435,7 +512,7 @@
 						url: 'songList.php',
 						dataType: 'json',
 						colModel: [
-							{display: 'Title', name: 'title', width: 400, sortable: true, align: 'left', process: getSelected},
+							{display: 'Title', name: 'title', width: 400, sortable: true, align: 'left', process: getActive},
 							{display: 'Artist', name: 'artist', width: 250, sortable: true, align: 'left'},
 							{display: 'Album', name: 'album', width: 250, sortable: true, align: 'left'},
 							{display: 'File', name: 'mp3', width: 1, sortable: true, hide: true, align: 'left'},
@@ -444,7 +521,7 @@
 					});
 
 
-					function getSelected(celDiv, id) {
+					function getActive(celDiv, id) {
 						$(celDiv).click(function() {
 
 							//set the song to be played on double click
@@ -452,16 +529,18 @@
 								activeSong = id;
 							else
 								activeSong = 0;
+						});
+					}
 
-							//set the list of currently selected songs
-							selected = [];
-							$('.trSelected').each(function() {
-								var col = [];
-								$(this).find('div').each(function() {
-									col.push($(this).text());
-								});
-								selected.push(col);
+					function getSelected() {
+						//set the list of currently selected songs
+						selected = [];
+						$('#flexSONG .trSelected').each(function() {
+							var col = [];
+							$(this).find('div').each(function() {
+								col.push($(this).text());
 							});
+							selected.push(col);
 						});
 					}
 
@@ -539,8 +618,9 @@
 							currentPL.push(newSong);
 						});
 						
-						//myPlaylist.setPlaylist(currentPL);
-						myPlaylist.play(activeSong);
+						myPlaylist.setPlaylist(currentPL);
+						myPlaylist.select(activeSong);
+						myPlaylist.option("autoPlay", true);
 					});
 					
 				</script>
