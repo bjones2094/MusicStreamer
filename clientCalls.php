@@ -140,7 +140,7 @@
 			$compare = $row["password"];
 			
 			if($password == $compare) {
-				return $row["email"];
+				return 'Success';
 			}
 			else {
 				return false;
@@ -330,13 +330,37 @@
 		}
 	} 
 	
-	function shareSong($sender, $receiver, $fileName, $title, $artist, $album) {
+	function arraySongList($passedList) {
+		// Separate the JS array, and put it in a PHP array
+		// First the list of songs
+		$listedSongs = explode(",:,", $passedList);
+							
+		// Now that we have a list of the songs, we need to get the info for each one
+		// and add them to a PHP array. 
+		// Define the arrays for song list 
+		$lSong = array();
+											
+		// loop through the song list passed in
+		for ($i = 0; $i <= (count($listedSongs) - 1); $i++) {
+			// Define array for song info - clear each time (at the end)
+			$iSong = array();
+			// Separate the JS array for song info, and put it in a PHP array
+			$listedSongInfo = explode(",", $listedSongs[$i]);
+			array_push($iSong, $listedSongInfo[0], $listedSongInfo[1], $listedSongInfo[2], $listedSongInfo[3]);
+			array_push($lSong, $iSong);
+			unset ($iSong);
+		}
+		
+		return $lSong;
+	}
+	
+	function shareSong($sender, $receiver, $files) {
 		if($sender == $receiver) {
 			return false;
 		}
 		else {
 			createPlaylist($receiver, "Shared");
-			addToPlaylist($receiver, "Shared", $fileName, $title, $artist, $album);
+			addToPlaylist($receiver, "Shared", $files);
 			return true;
 		}
 	}
@@ -358,12 +382,12 @@
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			
 			if(isset($jsonObject->$playlistName)) {
-				$playlist = $jsonObject->Shared;
+				$playlist = $jsonObject->$playlistName;
 				
 				foreach($playlist as $key => $songInfo) {
 					if(!file_exists($songInfo->mp3)) {
 						unset($playlist[$key]);
-						$jsonObject->Shared = $playlist;
+						$jsonObject->$playlistName = $playlist;
 						file_put_contents($jsonFileName, json_encode($jsonObject));
 					}
 				}
@@ -593,7 +617,7 @@
 		}
 	}
 	
-function addToPlaylist($username, $playlistName, $files) {
+	function addToPlaylist($username, $playlistName, $files) {
 		$jsonFileName = "./playlists/" . $username . "Playlists.json";
 		
 		if(file_exists($jsonFileName)) {
@@ -636,25 +660,26 @@ function addToPlaylist($username, $playlistName, $files) {
 			return false;
 		}
 	}
-
-	function removeFromPlaylist($username, $playlistName, $fileName) {
+	
+	function removeFromPlaylist($username, $playlistName, $files) {
 		$jsonFileName = "./playlists/" . $username . "Playlists.json";
-		
+
 		if(file_exists($jsonFileName)) {
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			
 			if(isset($jsonObject->$playlistName)) {
-				$playlist = $jsonObject->$playlistName;
-				
-				foreach($playlist as $key => $songInfo) {
-					if($songInfo->mp3 == $fileName) {
-						unset($playlist[$key]);
-						$jsonObject->$playlistName = $playlist;
-						file_put_contents($jsonFileName, json_encode($jsonObject));
-						return true;
-					}
+				foreach($files as $fileName) {
+				    $playlist = $jsonObject->$playlistName;
+				    
+				    foreach($playlist as $key => $songInfo) {
+					    if($songInfo->mp3 == $fileName[3]) {
+						    unset($playlist[$key]);
+						    $jsonObject->$playlistName = $playlist;
+					    }
+				    }
 				}
-				return false;
+				file_put_contents($jsonFileName, json_encode($jsonObject));
+				return true;
 			}
 			else {
 				return false;
@@ -663,10 +688,11 @@ function addToPlaylist($username, $playlistName, $files) {
 		else {
 			return false;
 		}
-	}	
+	}
+	
 	// Search functions
-
- function basicSearch($username, $query) {
+	
+	function basicSearch($username, $query) {
 		// Query database with user query across all fields (e.g. title, artist, album)
 		
 	
@@ -696,6 +722,7 @@ function addToPlaylist($username, $playlistName, $files) {
 
 		$stmt = $connect->prepare($queries);
 
+//other code here
 		$stmt->bind_param("s", $username);
 		$stmt->execute();
         
@@ -720,34 +747,68 @@ function addToPlaylist($username, $playlistName, $files) {
 			  return json_encode($jsonSearchArray);
 		}
 		
-	}	
+	}
 	
 	function advancedSearch($username, $title, $artist, $album) {
-		// If field is NULL, don't use it, otherwise query database with correct terms
-		
-		$jsonFileName = "./playlists/" . $username . "Library.json";
-
-		if(file_exists($jsonFileName)) {
-			$jsonArray = json_decode(file_get_contents($jsonFileName));
-			$jsonSearchArray = array();
-			$newObject = new stdClass();
-
-			
-			foreach($jsonArray as $songInfo) {
-				if(($songInfo->title == $title || $songInfo->title == NULL) &&
-				  ($songInfo->artist == $artist || $songInfo->title == NULL) &&
-				  ($songInfo->album == $album || $songInfo->title == NULL )) {
-							
-					$newObject->title = $songInfo->title;
-					$newObject->artist =  $songInfo->artist;
-					$newObject->album = $songInfo->album;
-					$newObject->mp3 = $songInfo->mp3;
-					$jsonSearchArray []= $newObject;
-				}
-			}
+		$downtTitle = strtolower ($title);
+    	$downtArtist = strtolower ($artist);
+    	$downtAlbum = strtolower ($album);
+    
+    $connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");	
+		if(mysqli_connect_error()) {
+			return 'Connection Error';
 		}
+		
+		#$stmt = $connect->prepare("SELECT * FROM music WHERE (%LOWER(title)%)= ? AND owner = ?");
+		
+		#("SELECT * FROM music WHERE title RLIKE \bLOWER(?)\b AND owner = ?");
+		//get the submitted data
 
-		return json_encode($jsonSearchArray);
+
+		//split it into an array
+		$searchTitle = explode(" ",$downTitle);
+		$searchArtist = explode(" ",$downArtist);
+		$searchAlbum = explode(" ",$downAlbum);
+		$jsonSearchArray = array();
+		
+		//loop and add the words to the query
+		$queries = "SELECT * FROM music WHERE owner = ? AND (title LIKE '%$searchTitle[0]%' OR
+		artist LIKE '%$searchArtist[0]%' OR album LIKE '%$searcAlbum[0]%'";
+		
+		for($i = 1;$i < count($searchTitle); $i++)
+		{
+    		$queries .= " OR title LIKE '%$searchTitle[$i]%' OR artist LIKE '%$searchArtist[$i]%'
+    		OR album LIKE '%$searchAlbum[$i]%'";
+		}
+		$queries .= ")"; 
+		//do the query
+
+		$stmt = $connect->prepare($queries);
+
+//other code here
+		$stmt->bind_param("s", $username);
+		$stmt->execute();
+        
+        $result = $stmt->get_result();
+        $row = $result->fetch_array();
+        if($row == NULL) {
+		
+			print 'NoMatch';
+		}		
+		else {
+			 do{
+			 	
+				    $newObject = new stdClass();
+			   		$newObject->title = $row["title"];
+					$newObject->artist =  $row["artist"];
+					$newObject->album = $row["album"];
+					$newObject->mp3 = $row["file_name"];
+					$jsonSearchArray []= $newObject;
+						
+			  } while($row = $result->fetch_array());
+			 
+			  return json_encode($jsonSearchArray);
+		}
 	
 	}
 	
