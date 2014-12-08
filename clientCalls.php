@@ -39,6 +39,23 @@
 			$stmt->bind_param("sss", $username, $password, $email);
 			$stmt->execute();
 			
+			$jsonFileName = "./playlists/" . $username . "Library.json";
+		
+			if(file_exists($jsonFileName)) {
+			$jsonArray = json_decode(file_get_contents($jsonFileName));
+			
+			foreach($jsonArray as $songInfo) {
+				if($songInfo->mp3 == $fileName) {
+					return false;
+				}
+			}
+		}
+		else {
+			$jsonArray = array();
+		}
+		file_put_contents($jsonFileName, json_encode($jsonArray));
+			createPlaylist($username, "Shared");
+			
 			return 'UserCreated';
 		}
 		else {
@@ -360,6 +377,7 @@
 		}
 		else {
 			createPlaylist($receiver, "Shared");
+			print "IM HERE";
 			addToPlaylist($receiver, "Shared", $files);
 			return true;
 		}
@@ -525,34 +543,32 @@
 		}
 	}
 	
-	function deleteSong($username, $fileName) {
+	function deleteSong($username, $files) {
 		$connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");
-		
-		// Delete song info from database
-		
-		$stmt = $connect->prepare("DELETE FROM music WHERE owner = ? AND file_name = ?");
-		$stmt->bind_param("ss", $username, $fileName);
-		$stmt->execute();
-		
-		// Delete song info from library file
-		
 		$jsonFileName = "./playlists/" . $username . "Library.json";
 		
 		if(file_exists($jsonFileName)) {
 			$jsonArray = json_decode(file_get_contents($jsonFileName));
-			
-			foreach($jsonArray as $key => $songInfo) {
-				if($songInfo->mp3 == $fileName) {
-					unset($jsonArray[$key]);
-					file_put_contents($jsonFileName, json_encode($jsonArray));
-				}
 			}
-		}
+		// Delete song info from database
+		foreach($files as $info) {
+		$stmt = $connect->prepare("DELETE FROM music WHERE owner = ? AND file_name = ?");
+		$stmt->bind_param("ss", $username, $info[3]);
+		$stmt->execute();
+		
+		// Delete song info from library file
+		
+			foreach($jsonArray as $key => $songInfo) {
+				if($songInfo->mp3 == $info[3]) {
+					 array_splice($jsonArray, $key, 1);
+					file_put_contents($jsonFileName, json_encode($jsonArray));	
+					}
+				}
 		
 		// Check if other users own the file
 		
 		$stmt = $connect->prepare("SELECT * FROM music WHERE file_name = ?");
-		$stmt->bind_param("s", $fileName);
+		$stmt->bind_param("s", $info[3]);
 		$stmt->execute();
 		
 		$result = $stmt->get_result();
@@ -561,15 +577,11 @@
 		// Delete file if no other users own song
 		
 		if($row == NULL) {
-			unlink($fileName);
+			unlink($info[3]);
 			
-			return 'SongDeleted';
+			}
+	
 		}
-		else {
-			return 'Song owned by others';
-		}
-		
-		
 	}
 	
 	// Playlist functions
@@ -622,9 +634,7 @@
 		
 		if(file_exists($jsonFileName)) {
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
-			
 			if(isset($jsonObject->$playlistName)) {
-			
 			foreach($files as $info)
 			{
 				$flag= false;
@@ -636,7 +646,7 @@
 				$newObject->mp3 = $info[3];
 			
 				$playlist = $jsonObject->$playlistName;
-				
+	
 				foreach($playlist as $songInfo) {
 					if($songInfo->mp3 == $info[3]) {
 						$flag=true;
@@ -666,14 +676,13 @@
 
 		if(file_exists($jsonFileName)) {
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
-			
 			if(isset($jsonObject->$playlistName)) {
+				print_r ($files);
 				foreach($files as $fileName) {
 				    $playlist = $jsonObject->$playlistName;
-				    
 				    foreach($playlist as $key => $songInfo) {
 					    if($songInfo->mp3 == $fileName[3]) {
-						    unset($playlist[$key]);
+						   array_splice($playlist, $key, 1);
 						    $jsonObject->$playlistName = $playlist;
 					    }
 				    }

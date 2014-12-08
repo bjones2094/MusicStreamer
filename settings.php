@@ -295,20 +295,20 @@
 				
 						// File hasn't been uploaded yet
 						if($copyCheck == "NewFile") {
-							print ("File has been uploaded and added to your library!\n");
+							print ("<br /><b>File has been uploaded and added to your library!\n<b>");
 							addSongToDB($username, $fileName, $tags["Title"], $tags["Author"], $tags["Album"]);
 							addToLibrary($username, $fileName, $tags["Title"], $tags["Author"], $tags["Album"]);
 						}
 				
 						// This user has already uploaded this file before
 						else if($copyCheck == "SameUser") {
-							print("You have already uploaded this file\n");
+							print("<br /><b>You have already uploaded this file\n</b>");
 							unlink($fileName);
 						}
 				
 						// Another user has uploaded this file before
 						else {
-							print("This file has already been uploaded by another user. But Don't worry, we'll make sure you can still access it in your library.\n");
+							print("<br /><b>This file has already been uploaded by another user. But Don't worry, we'll make sure you can still access it in your library.\n</b>");
 							addSongToDB($username, $copyCheck, $tags["Title"], $tags["Author"], $tags["Album"]);
 							addToLibrary($username, $copyCheck, $tags["Title"], $tags["Author"], $tags["Album"]);
                             unlink($fileName);

@@ -11,10 +11,13 @@ body {
 
 
 /* Link Styles */
-A#basic:link, A:visited, A:active, {text-decoration: underline; color: #2457A4;}
-A#basic:hover {text-decoration: none; color: #AA0000;}
+a#basic:link, a:visited {text-decoration: underline; color: #2457A4;}
+a#basic:hover {text-decoration: none; color: #AA0000;}
 
-a:link, a:visited, a:active {color: #66ddee;text-decoration: underline;}
+a#delpl:link, a:visited {text-decoration: underline; color: Red;}
+a#delpl:hover {text-decoration: bold, underline; color: #AA0000;}
+
+a:link, a:visited {text-decoration: underline; color: #66ddee;}
 a:hover {text-decoration: none; color: #AA0000;}
 
 

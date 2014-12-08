@@ -1,4 +1,7 @@
 <?php
+   include "clientCalls.php";
+	include "ChromePhp.php";
+
 	session_start();
 	
 	// Check if the system is requesting the page. If it is, allow to run
@@ -14,12 +17,28 @@
     $query = isset($_POST['query']) ? $_POST['query'] : false;
     $qtype = isset($_POST['qtype']) ? $_POST['qtype'] : false;
 
+	ChromePhp::log('LOADING FLEX...');
 
     if(isset($_GET["playlistName"])) {
+		  ChromePhp::log("Variables are: ");
+		  ChromePhp::log($_GET["playlistName"]);
+
         if($_GET["playlistName"] == "Library") {
-            $rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));
+            if(isset($_GET["query"])) {
+					$rows = json_decode(basicSearch($_SESSION["username"], $_GET["query"]));
+
+					if(is_null($rows))
+						$rows = json_encode (json_decode ("[]"));
+					
+					ChromePhp::log($_GET["query"]);
+				}
+
+				else
+					$rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));
+
         }
         else {
+            updatePlaylist($_SESSION["username"], $_GET["playlistName"]);
             $object = json_decode(file_get_contents("./playlists/" . $_SESSION["username"] . "Playlists.json"));
             $rows = $object->$_GET["playlistName"];
         }
@@ -27,6 +46,8 @@
     else {
         $rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));
     }
+
+	ChromePhp::log($rows);
 
     header("Content-type: application/json");
     $jsonData = array('page'=>$page,'total'=>0,'rows'=>array());

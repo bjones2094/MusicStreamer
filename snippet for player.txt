@@ -1,0 +1,55 @@
+<?php
+			if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+				// If something was posted...
+				
+				if (isset($_POST["addToPL"])) {
+					// No need to do any checks here, there user has alerady been asked
+					// if they really want to delete the playlist - just send the function call
+					$plAddingTo = $_REQUEST['PlName'];
+				
+					if ($plAddingTo == "Library") {
+						print ("<b>To add songs to the library playlist, please upload songs.</b><br /><br />");
+					} else if ($plAddingTo == "") {
+						print ("<b>Please select a playlist to add to.</b><br /><br />");
+					} else if ($plAddingTo == "Shared") {
+					    print ("<b>You cannot add songs to your shared music playlist</b><br /><br />");
+					} else {
+						// Send array to function in client calls 
+						$lSong = arraySongList($_REQUEST['songsToAdd']);
+						
+						// Send the song list to the the PHP function for adding to a playlist
+						addToPlaylist($username, $plAddingTo, $lSong);
+					}
+					
+				} else if (isset($_POST["remfPL"])) {
+					// Most of the checks have already been done, so just send to the client call
+					// Separate the JS array, and put it in a PHP array
+					
+					// Name of playlist being worked with
+					$plRemFrom = $_REQUEST['PlName'];
+					
+					$lSong = $_REQUEST['songsToRemove'];
+					
+					// Send the song list to the the PHP function for removing from a playlist
+					removeFromPlaylist($username, $plRemFrom, $lSong);
+				
+				} else if (isset($_POST["delfLib"])) {
+					print ("Deletion");
+				
+				} else if (isset($_POST["songShare"])) {
+					// Make sure that the user has typed in the name of a user they want to share with
+					$sharedUser = $_REQUEST['shareUN'];
+					
+					if (trim($sharedUser) == "") {
+						print ("<b>Please enter the name of a user you want to share with.</b><br /><br />");
+					} else {
+						$lSong = $_REQUEST['songsToShare'];
+						
+						// Send the song list to the the PHP function for sharing songs (same as add to playlist)
+						// but this time we use the shared user, and a default "Shared" playlist
+						addToPlaylist($sharedUser, "Shared", $lSong);
+				
+					} 
+				}
+			}
+			?>

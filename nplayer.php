@@ -11,7 +11,7 @@
 	if ($username == "") {
 		// Close any session that may be open
 		session_destroy();
-		header("Location: http://music.apolymoxic.com/login.php");
+		header("Location: http://music.apolymoxic.com/nlogin.php");
 	}
 	else {
 	    // Destroy session if user's last page view was over 30 minutes ago
@@ -19,7 +19,7 @@
 	    $nowTime = time();
 	    if($nowTime - $_SESSION["lastViewTime"] > 1800) {
 	        session_destroy();
-	        header("Location: http://music.apolymoxic.com/login.php");
+	        header("Location: http://music.apolymoxic.com/nlogin.php");
 	    }
 	    else {      // Update last view time
 	        $_SESSION["lastViewTime"] = $nowTime;
@@ -42,6 +42,9 @@
 	<!-- base href (commented) and css for site as a whole -->
 	<!--<base href="http://music.apolymoxic.com/" />-->
 	<link rel="stylesheet" href="css/musicSite.css" type="text/css" />
+	
+	<!-- js for ajax -->
+	<script type="text/javascript" src="js/ajax.js"></script>
 	
 	<!-- css and js for jplayer -->
 	<link type="text/css" href="skins/blue.monday/jplayer.blue.monday.css" rel="stylesheet" />
@@ -528,7 +531,6 @@
 							{display: 'File', name: 'mp3', width: 1, sortable: true, hide: true, align: 'left'},
 							],
 						onSuccess: function(){init_playlist()},
-						hideOnSubmit: false
 					});
 
 
@@ -786,45 +788,66 @@
 						} else {
 							// Get the name of the file selected
 							var str = ($('#flexSONG .trSelected td:eq(3)').text());
-							alert(str);
 							var dlFile = str.substring(2, str.length);
-							alert(dlFile);
+							
+							alert (dlFile);
 							// Create a URL for the file
-							$dlURL = "http://music.apolymoxic.com/" + dlFile;
 							$songFileName = (($('#flexSONG .trSelected td:eq(1)').text()) + " - " +
 								($('#flexSONG .trSelected td:eq(0)').text()) + ".mp3");
+							$dlURL = "http://music.apolymoxic.com/download.php?filename=" + dlFile +
+								"&songName=" + $songFileName;
 								
-								/* Opens the file in a hidden iFrame
+								/*
+								if (!window.ActiveXObject) {
+									var save = document.createElement('a');
+									save.href = $dlURL;
+									save.target = '_blank';
+									save.download = $songFileName || 'unknown';
+
+									var event = document.createEvent('Event');
+									event.initEvent('click', true, true);
+									save.dispatchEvent(event);
+									(window.URL || window.webkitURL).revokeObjectURL(save.href);
+								}
+
+								// for IE
+								else if ( !! window.ActiveXObject && document.execCommand)     {
+									var _window = window.open($dlURL, '_blank');
+									_window.document.close();
+									_window.document.execCommand('SaveAs', true, $songFileName || $dlURL)
+									_window.close();			
+								}
+							*/
+							
+								// Opens the file in a hidden iFrame
 								var hiddenIFrameID = 'hiddenDownloader',
 								iframe = document.getElementById(hiddenIFrameID);
+								
 								if (iframe === null) {
 									iframe = document.createElement('iframe');
 									iframe.id = hiddenIFrameID;
 									iframe.style.display = 'none';
 									document.body.appendChild(iframe);
 								}
-								iframe.src = $dlURL;
-								*/
 								
-							if (!window.ActiveXObject) {
-								var save = document.createElement('a');
-								save.href = $dlURL;
-								save.target = '_blank';
-								save.download = $songFileName || 'unknown';
+								iframe.src = $dlURL;
+							
+							/*
+							var httpRequest = null;
 
-								var event = document.createEvent('Event');
-								event.initEvent('click', true, true);
-								save.dispatchEvent(event);
-								(window.URL || window.webkitURL).revokeObjectURL(save.href);
+							if (!httpRequest) {
+								httpRequest = CreateHTTPRequestObject ();   // defined in ajax.js
 							}
-
-							// for IE
-							else if ( !! window.ActiveXObject && document.execCommand)     {
-								var _window = window.open($dlURL, '_blank');
-								_window.document.close();
-								_window.document.execCommand('SaveAs', true, $songFileName || $dlURL)
-								_window.close();			
+							
+							if (httpRequest) {          
+								// The requested file must be in the same domain that the page is served from.
+								var url = $dlURL;
+								httpRequest.open ("GET", url, true);    // async
+								httpRequest.setRequestHeader ("Accept", "text/xml");
+								httpRequest.onreadystatechange = OnStateChange;
+								httpRequest.send (null);
 							}
+							*/
 						}
 					}
 				</script>
