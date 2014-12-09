@@ -782,8 +782,11 @@
 					function downloadSong() { 	
 					
 						// Check for no selected items
-						if($('#flexSONG .trSelected').length > 1) {
-							alert ("Please select only one item to download");
+						if($('#flexSONG .trSelected').length < 1) {
+							alert ("Please select a song to download");
+						// Check to see if there are more than one song selected
+						} else if($('#flexSONG .trSelected').length > 1) {
+							alert ("Please select only one song to download");
 						} else {
 							// Get the name of the file selected
 							var str = ($('#flexSONG .trSelected td:eq(3)').text());
