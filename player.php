@@ -127,9 +127,10 @@
 					print ("| <a id='basic' href='admin.php'>Administration</a> ");
 				}
 			?>
-			| Music Player | <a href="settings.php">Settings & Upload</a> | <a href="logout.php">Logout</a> |
+			| Music Player | <a href="settings.php">Settings & Upload</a> | <a href="logout.php">Logout</a> | <br />
 		</td>
 	</tr>
+	<tr width="100%" height="5"><td>&nbsp;</td></tr>
 	<tr width="100%">
 		<td width="100%">
 
@@ -361,7 +362,7 @@
 			<form action="<?php $_SERVER['SCRIPT_NAME']?>" method="POST">
 				<table width="100%" border="0" align="left">
 					<tr width="100%"><td>Playlist Name:</td></tr>
-					<tr width="100%"><td><input type="text" name="new_PL"></td></tr>
+					<tr width="100%"><td><input type="text" name="new_PL" style="width:175px;"></td></tr>
 					<tr width="100%"><td><br /><input type="submit" name="createPL" value="Create Playlist"></td></tr>
 					<tr width="100%" height="5"><td>&nbsp;</td></tr>
 				</table>
@@ -786,47 +787,29 @@
 						} else {
 							// Get the name of the file selected
 							var str = ($('#flexSONG .trSelected td:eq(3)').text());
-							alert(str);
-							var dlFile = str.substring(2, str.length);
-							alert(dlFile);
+							var dlFile = str.substring(13, str.length);
+
 							// Create a URL for the file
-							$dlURL = "http://music.apolymoxic.com/" + dlFile;
 							$songFileName = (($('#flexSONG .trSelected td:eq(1)').text()) + " - " +
 								($('#flexSONG .trSelected td:eq(0)').text()) + ".mp3");
+							$dlURL = "http://music.apolymoxic.com/download.php?filename=" + dlFile +
+								"&songName=" + $songFileName;
 								
-								/* Opens the file in a hidden iFrame
-								var hiddenIFrameID = 'hiddenDownloader',
-								iframe = document.getElementById(hiddenIFrameID);
-								if (iframe === null) {
-									iframe = document.createElement('iframe');
-									iframe.id = hiddenIFrameID;
-									iframe.style.display = 'none';
-									document.body.appendChild(iframe);
-								}
-								iframe.src = $dlURL;
-								*/
+							// Opens the file in a hidden iFrame
+							var hiddenIFrameID = 'hiddenDownloader',
+							iframe = document.getElementById(hiddenIFrameID);
+							
+							if (iframe === null) {
+								iframe = document.createElement('iframe');
+								iframe.id = hiddenIFrameID;
+								iframe.style.display = 'none';
+								document.body.appendChild(iframe);
+							}
 								
-							if (!window.ActiveXObject) {
-								var save = document.createElement('a');
-								save.href = $dlURL;
-								save.target = '_blank';
-								save.download = $songFileName || 'unknown';
-
-								var event = document.createEvent('Event');
-								event.initEvent('click', true, true);
-								save.dispatchEvent(event);
-								(window.URL || window.webkitURL).revokeObjectURL(save.href);
-							}
-
-							// for IE
-							else if ( !! window.ActiveXObject && document.execCommand)     {
-								var _window = window.open($dlURL, '_blank');
-								_window.document.close();
-								_window.document.execCommand('SaveAs', true, $songFileName || $dlURL)
-								_window.close();			
-							}
+							iframe.src = $dlURL;
 						}
 					}
+					
 				</script>
 		</td>
 		
@@ -907,7 +890,7 @@
 					<tr width="100%"><td>&nbsp;</td></tr>
 					<tr width="100%"><td>Playlist Name:</td></tr>
 					<tr width="100%"><td>
-						<select id="dropPLL" style="width:150px;">
+						<select id="dropPLL" style="width:175px;">
 							<option>       </option>
 						</select></td></tr>
 					<tr width="100%">
@@ -921,7 +904,7 @@
 				<table width="25%" border="0" align="left">
 					<tr width="100%"><td>&nbsp;</td></tr>
 					<tr width="100%"><td>Username To Share With:</td></tr>
-					<tr width="100%"><td><input type="text" name="shareUN"></td></tr>
+					<tr width="100%"><td><input type="text" name="shareUN" style="width:175px;"></td></tr>
 					<tr width="100%">
 						<td>
 							<br /><input type="button" id="shareButton" value="Share Songs" onClick="shareSongs(shareUN.value);">
@@ -932,11 +915,11 @@
 				
 				<table width="25%" border="0" align="left">
 					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
+					<tr width="100%"><td>Search: </td></tr>
+					<tr width="100%"><td><input id="query" type="text" style="width:175px;"></td></tr>
 					<tr width="100%">
 						<td>
-							<br /><input id="remDel" type="button" value="Delete From Library" onClick="remDelList();">
+							<br /><input type="button" id="search" value="Search" onClick="searchQ();">
 						</td>
 					</tr>
 					<tr width="100%" height="5"><td>&nbsp;</td></tr>
@@ -944,24 +927,14 @@
 				
 				<table width="25%" border="0" align="left">
 					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
 					<tr width="100%">
 						<td>
 							<br /><input id="DLSong" type="button" value="Download Song" onClick="downloadSong();">
 						</td>
 					</tr>
-					<tr width="100%" height="5"><td>&nbsp;</td></tr>
-				</table>
-
-				<table width="25%" border="0" align="left">
-					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
-					<tr width="100%"><td>&nbsp;</td></tr>
 					<tr width="100%">
 						<td>
-							<br /><input id="query" type="text">
-							<br /><input id="search" type="button" value="search" onClick="searchQ();">
+							<br /><input id="remDel" type="button" value="Delete From Library" onClick="remDelList();">
 						</td>
 					</tr>
 					<tr width="100%" height="5"><td>&nbsp;</td></tr>

@@ -110,11 +110,11 @@
 				<table width="100%" border="0" align="left">
 					<tr width="100%">
 						<td with="90">Username: </td>
-						<td><input type="text" name="username"></td>
+						<td><input type="text" name="username" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="90">Password: </td>
-						<td><input type="password" name="password"></td>
+						<td><input type="password" name="password" style="width:175px;"></td>
 					</tr>
 				</table>
 				<input type="submit" name="login" value="Log In">
@@ -199,19 +199,19 @@
 				<table width="100%" border="0" align="left">
 					<tr width="100%">
 						<td with="140">Username: </td>
-						<td><input type="text" name="reqUsername"></td>
+						<td><input type="text" name="reqUsername" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="140">Password: </td>
-						<td><input type="password" name="reqPassword"></td>
+						<td><input type="password" name="reqPassword" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="140">Confirm Password: </td>
-						<td><input type="password" name="verPassword"></td>
+						<td><input type="password" name="verPassword" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="140">Email Address: </td>
-						<td><input type="text" name="email"></td>
+						<td><input type="text" name="email" style="width:175px;"></td>
 					</tr>
 				</table>
 				<input type="submit" name="create" value="Create Account">

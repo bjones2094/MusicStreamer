@@ -144,15 +144,15 @@
 					<tr width="100%"><td width="150">&nbsp;</td></tr>
 					<tr width="100%">
 						<td width="150">OLD Password: </td>
-						<td><input type="password" name="password"></td>
+						<td><input type="password" name="password" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="150">New Password: </td>
-						<td><input type="password" name="new_password"></td>
+						<td><input type="password" name="new_password" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="150">Confirm Password: </td>
-						<td><input type="password" name="conf_password"></td>
+						<td><input type="password" name="conf_password" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="150">&nbsp;</td>
@@ -219,7 +219,7 @@
 					<tr width="100%"><td width="150">&nbsp;</td></tr>
 					<tr width="100%">
 						<td width="150">New Email Address: </td>
-						<td><input type="text" name="new_email"></td>
+						<td><input type="text" name="new_email" style="width:175px;"></td>
 					</tr>
 					<tr width="100%">
 						<td width="150">&nbsp;</td>

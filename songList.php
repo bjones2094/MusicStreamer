@@ -22,26 +22,26 @@
     if(isset($_GET["playlistName"])) {
 		  ChromePhp::log("Variables are: ");
 		  ChromePhp::log($_GET["playlistName"]);
+		
+			if(isset($_GET["query"])) {
+				$rows = json_decode(basicSearch($_SESSION["username"], $_GET["query"]));
+				
+				ChromePhp::log($_GET["query"]);
 
-        if($_GET["playlistName"] == "Library") {
-            if(isset($_GET["query"])) {
-					$rows = json_decode(basicSearch($_SESSION["username"], $_GET["query"]));
-
-					if(is_null($rows))
-						$rows = json_encode (json_decode ("[]"));
-					
-					ChromePhp::log($_GET["query"]);
+				if(is_null($rows)) {
+					$rows = array();
 				}
+			}
 
-				else
-					$rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));
-
-        }
-        else {
-            updatePlaylist($_SESSION["username"], $_GET["playlistName"]);
-            $object = json_decode(file_get_contents("./playlists/" . $_SESSION["username"] . "Playlists.json"));
-            $rows = $object->$_GET["playlistName"];
-        }
+			else if($_GET["playlistName"] == "Library") {
+				$rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));
+			}
+			else {
+				updatePlaylist($_SESSION["username"], $_GET["playlistName"]);
+				$object = json_decode(file_get_contents("./playlists/" . $_SESSION["username"] . "Playlists.json"));
+				
+				$rows = $object->$_GET["playlistName"];
+			}
     }
     else {
         $rows = json_decode(file_get_contents("./playlists/" . $_SESSION['username'] . "Library.json"));

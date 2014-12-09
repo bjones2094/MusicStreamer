@@ -677,7 +677,6 @@
 		if(file_exists($jsonFileName)) {
 			$jsonObject = json_decode(file_get_contents($jsonFileName));
 			if(isset($jsonObject->$playlistName)) {
-				print_r ($files);
 				foreach($files as $fileName) {
 				    $playlist = $jsonObject->$playlistName;
 				    foreach($playlist as $key => $songInfo) {
@@ -703,8 +702,7 @@
 	
 	function basicSearch($username, $query) {
 		// Query database with user query across all fields (e.g. title, artist, album)
-		
-	
+
     $downQuery = strtolower ($query);
     
     $connect = new mysqli("127.0.0.1", "root", "A2!y123Sql", "music_db");	
@@ -738,7 +736,7 @@
         $result = $stmt->get_result();
         $row = $result->fetch_array();
         if($row == NULL) {
-		
+			return NULL;
 			print 'NoMatch';
 		}		
 		else {
